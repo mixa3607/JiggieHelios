@@ -1,6 +1,4 @@
-﻿using JiggieHelios;
-
-public static partial class JiggieBinaryResponse
+﻿public static partial class JiggieBinaryResponse
 {
     public class GroupsMsgBase
     {
@@ -40,48 +38,5 @@ public static partial class JiggieBinaryResponse
                 Y = reader.ReadSingle(),
             };
         }
-    }
-
-    public class PickMsg : GroupsMsgBase, IJiggieBinaryResponse
-    {
-        public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.PICK;
-
-        public static PickMsg Decode(BinaryReader reader) => Decode<PickMsg>(reader);
-    }
-
-    public class MoveMsg : GroupsMsgBase, IJiggieBinaryResponse
-    {
-        public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.MOVE;
-
-        public static MoveMsg Decode(BinaryReader reader) => Decode<MoveMsg>(reader);
-    }
-
-    public class DropMsg : GroupsMsgBase, IJiggieBinaryResponse
-    {
-        public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.DROP;
-
-        public static DropMsg Decode(BinaryReader reader) => Decode<DropMsg>(reader);
-    }
-}
-
-public class JiggieResponseObjectAttribute
-{
-    public JiggieResponseType ResponseType { get; }
-    public JiggieBinaryCommandType? BinaryType { get; }
-    public string? JsonType { get; set; }
-
-    public JiggieResponseObjectAttribute(JiggieBinaryCommandType binaryType)
-    {
-        ResponseType = JiggieResponseType.Binary;
-        BinaryType = binaryType;
-    }
-
-    public JiggieResponseObjectAttribute(string jsonType)
-    {
-        ResponseType = JiggieResponseType.Json;
-        JsonType = jsonType;
     }
 }

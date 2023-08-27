@@ -2,6 +2,7 @@
 
 public static partial class JiggieBinaryResponse
 {
+    [JiggieResponseObject(0)]
     public class RawMsg : IJiggieBinaryResponse
     {
         public JiggieResponseType ResponseType => JiggieResponseType.Binary;

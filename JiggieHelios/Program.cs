@@ -8,6 +8,8 @@ using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
+    .Destructure.ToMaximumStringLength(250)
+    .Destructure.ToMaximumCollectionCount(10)
     .MinimumLevel.Is(LogEventLevel.Verbose)
     .WriteTo.Console()
     .CreateLogger();
@@ -22,27 +24,20 @@ Console.WriteLine("Hello, World!");
 ushort userId = 0;
 var username = "HELIOS";
 var color = "#FFFFFF";
-var room = "T_oxcU";
+var room = "kBBcJa";//"T_oxcU";
 var secret = "JGjeYmR9mql_jFlXdJxd";
 
 
 var wsClient = new JiggieWsClient(factory.CreateLogger<JiggieWsClient>(), new JiggieProtocolTranslator());
-wsClient.MessageReceived
-    .Where(x => x.ResponseType == JiggieResponseType.Binary)
-    .Select(x => (IJiggieBinaryResponse)x)
-    .Where(x => x.Type == JiggieBinaryCommandType.HEARTBEAT)
-    .Select(x => (JiggieBinaryResponse.HeartbeatMsg)x)
+wsClient.OnlyMessages<JiggieBinaryResponse.HeartbeatMsg>()
     .Subscribe(x =>
     {
         _logger.LogInformation("Rec heartbeat");
         wsClient.Send(new JiggieBinaryRequest.HeartbeatMsg() {UserId = userId, Type = JiggieBinaryCommandType.HEARTBEAT});
     });
 
-wsClient.MessageReceived
-    .Where(x => x.ResponseType == JiggieResponseType.Json)
-    .Select(x => (IJiggieJsonResponse)x)
-    .Where(x => x.Type == "me")
-    .Select(x => (JiggieJsonResponse.MeMsg)x)
+wsClient
+    .OnlyMessages<JiggieJsonResponse.MeMsg>()
     .Subscribe(x =>
     {
         _logger.LogInformation("Me rec");

@@ -1,6 +1,9 @@
-﻿using System.Net.WebSockets;
+﻿using System;
+using System.Net;
+using System.Net.WebSockets;
 using System.Reactive.Linq;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Websocket.Client;
 using Websocket.Client.Models;
 
@@ -22,16 +25,45 @@ public class JiggieWsClient
         _logger = logger;
         _protocolTranslator = protocolTranslator;
 
-        _ws = new WebsocketClient(new Uri("wss://jiggie.fun/ws"));
+        _ws = new WebsocketClient(new Uri("wss://jiggie.fun/ws"), Factory);
         _ws.ReconnectTimeout = TimeSpan.FromSeconds(30);
         MessageReceived = _ws.MessageReceived.Select(DecodeResponse);
         DisconnectionHappened = _ws.DisconnectionHappened;
         ReconnectionHappened = _ws.ReconnectionHappened;
     }
 
+    private static async Task<WebSocket> Factory(Uri uri, CancellationToken ct)
+    {
+        var cookies = new CookieContainer();
+        cookies.Add(new Cookie(
+            "cf_clearance",
+            "uFyYOq43Qf6fPnuz9epEjebbaM2M1y8Pw9YDnEEzwM0-1693175524-0-1-d334409b.7c00b187.3a04a29a-160.0.0",
+            "/",
+            ".jiggie.fun")
+        );
+        var client = new ClientWebSocket()
+        {
+            Options =
+            {
+                Cookies = cookies,
+            }
+        };
+        client.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
+        client.Options.SetRequestHeader("Origin", "https://jiggie.fun");
+        client.Options.SetRequestHeader("Accept-Language", "ru-RU,ru;q=0.9");
+        await client.ConnectAsync(uri, ct).ConfigureAwait(false);
+        var webSocket = (WebSocket)client;
+        return webSocket; 
+    }
+
     public async Task StartAsync()
     {
         await _ws.Start();
+    }
+
+    public IObservable<T> OnlyMessages<T>() where T : IJiggieResponse
+    {
+        return MessageReceived.Where(x => x is T).Select(x => (T)x);
     }
 
     public void Send(IJiggieRequest req)

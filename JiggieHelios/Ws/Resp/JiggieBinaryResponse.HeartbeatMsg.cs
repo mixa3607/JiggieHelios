@@ -2,17 +2,17 @@
 
 public static partial class JiggieBinaryResponse
 {
+    [JiggieResponseObject(JiggieBinaryCommandType.HEARTBEAT)]
     public class HeartbeatMsg : IJiggieBinaryResponse
     {
         public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public required JiggieBinaryCommandType Type { get; set; }
+        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.HEARTBEAT;
         public required ushort UserId { get; set; }
 
-        public static HeartbeatMsg Decode(JiggieBinaryCommandType cmdType, BinaryReader reader)
+        public static HeartbeatMsg Decode(BinaryReader reader)
         {
             var msg = new HeartbeatMsg
             {
-                Type = cmdType,
                 UserId = reader.ReadUInt16(),
             };
 

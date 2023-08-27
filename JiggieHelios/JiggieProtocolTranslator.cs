@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Reflection;
+using System.Text;
 using JiggieHelios;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -25,53 +27,52 @@ public class JiggieProtocolTranslator
         { JiggieBinaryCommandType.HEARTBEAT, (obj, writer) => ((JiggieBinaryRequest.HeartbeatMsg)obj).Encode(writer) },
     };
 
-    private readonly Dictionary<JiggieBinaryCommandType, Func<BinaryReader, IJiggieBinaryResponse>> _binRespMap = new()
+    private readonly Dictionary<JiggieBinaryCommandType, Func<BinaryReader, IJiggieBinaryResponse>> _binRespMap =
+        BuildRespMap();
+        /*new()
     {
         { JiggieBinaryCommandType.PICK, JiggieBinaryResponse.PickMsg.Decode }, 
         { JiggieBinaryCommandType.MOVE, JiggieBinaryResponse.MoveMsg.Decode },
         { JiggieBinaryCommandType.DROP, JiggieBinaryResponse.DropMsg.Decode },
+        { JiggieBinaryCommandType.SELECT, JiggieBinaryResponse.SelectMsg.Decode },
+        { JiggieBinaryCommandType.DESELECT, JiggieBinaryResponse.DeselectMsg.Decode },
+        { JiggieBinaryCommandType.LOCK, JiggieBinaryResponse.LockMsg.Decode },
+        { JiggieBinaryCommandType.UNLOCK, JiggieBinaryResponse.UnlockMsg.Decode },
+        { JiggieBinaryCommandType.STEAL, JiggieBinaryResponse.StealMsg.Decode },
+        { JiggieBinaryCommandType.MERGE, JiggieBinaryResponse.MergeMsg.Decode },
+        { JiggieBinaryCommandType.ROTATE, JiggieBinaryResponse.RotateMsg.Decode },
+        { JiggieBinaryCommandType.RECORD_UPDATE, JiggieBinaryResponse.RecordUpdateMsg.Decode },
+        { JiggieBinaryCommandType.HEARTBEAT, JiggieBinaryResponse.HeartbeatMsg.Decode },
+    };*/
 
-        {
-            JiggieBinaryCommandType.SELECT,
-            (reader) => JiggieBinaryResponse.GroupIdsMsg.Decode(JiggieBinaryCommandType.SELECT, reader)
-        },
-        {
-            JiggieBinaryCommandType.DESELECT,
-            (reader) => JiggieBinaryResponse.GroupIdsMsg.Decode(JiggieBinaryCommandType.DESELECT, reader)
-        },
-        {
-            JiggieBinaryCommandType.LOCK,
-            (reader) => JiggieBinaryResponse.GroupIdsMsg.Decode(JiggieBinaryCommandType.LOCK, reader)
-        },
-        {
-            JiggieBinaryCommandType.UNLOCK,
-            (reader) => JiggieBinaryResponse.GroupIdsMsg.Decode(JiggieBinaryCommandType.UNLOCK, reader)
-        },
-        {
-            JiggieBinaryCommandType.STEAL,
-            (reader) => JiggieBinaryResponse.GroupIdsMsg.Decode(JiggieBinaryCommandType.STEAL, reader)
-        },
+    private static Dictionary<JiggieBinaryCommandType, Func<BinaryReader, IJiggieBinaryResponse>> BuildRespMap()
+    {
+        return typeof(JiggieBinaryResponse).Assembly
+            .GetTypes()
+            .Where(x => typeof(IJiggieBinaryResponse).IsAssignableFrom(x))
+            .Select(x =>
+            {
+                var attr = x.GetCustomAttribute<JiggieResponseObjectAttribute>();
+                if (attr == null)
+                    return null;
+                return new
+                {
+                    attr.BinaryType,
+                    Type = x,
+                    DecodeMethod = x.GetMethod("Decode")!
+                };
+            })
+            .Where(x => x != null)
+            .ToDictionary(
+                k => k!.BinaryType,
+                v => (Func<BinaryReader, IJiggieBinaryResponse>)((reader) => CallDecode(v!.DecodeMethod, reader))
+            );
+    }
 
-        {
-            JiggieBinaryCommandType.MERGE,
-            (reader) => JiggieBinaryResponse.MergeMsg.Decode(JiggieBinaryCommandType.MERGE, reader)
-        },
-
-        {
-            JiggieBinaryCommandType.ROTATE,
-            (reader) => JiggieBinaryResponse.RotateMsg.Decode(JiggieBinaryCommandType.ROTATE, reader)
-        },
-
-        {
-            JiggieBinaryCommandType.RECORD_UPDATE,
-            (reader) => JiggieBinaryResponse.RecordUpdateMsg.Decode(JiggieBinaryCommandType.RECORD_UPDATE, reader)
-        },
-
-        {
-            JiggieBinaryCommandType.HEARTBEAT,
-            (reader) => JiggieBinaryResponse.HeartbeatMsg.Decode(JiggieBinaryCommandType.HEARTBEAT, reader)
-        },
-    };
+    private static IJiggieBinaryResponse CallDecode(MethodInfo methodInfo, BinaryReader reader)
+    {
+        return (IJiggieBinaryResponse)methodInfo.Invoke(null, new object?[] { reader })!;
+    }
 
     public IJiggieJsonResponse DecodeJsonResponse(string text)
     {

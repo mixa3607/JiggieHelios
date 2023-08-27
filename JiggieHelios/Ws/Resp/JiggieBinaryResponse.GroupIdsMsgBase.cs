@@ -1,20 +1,15 @@
-﻿using JiggieHelios;
-
-public static partial class JiggieBinaryResponse
+﻿public static partial class JiggieBinaryResponse
 {
-    public class GroupIdsMsg : IJiggieBinaryResponse
+    public abstract class GroupIdsMsgBase
     {
-        public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public JiggieBinaryCommandType Type { get; set; }
         public ushort UserId { get; set; }
         public IReadOnlyList<ushort> GroupIds { get; set; }
 
-        public static GroupIdsMsg Decode(JiggieBinaryCommandType cmdType, BinaryReader reader)
+        public static T Decode<T>(BinaryReader reader) where T: GroupIdsMsgBase, new()
         {
             var groups = new List<ushort>();
-            var msg = new GroupIdsMsg
+            var msg = new T
             {
-                Type = cmdType,
                 UserId = reader.ReadUInt16(),
                 GroupIds = groups,
             };

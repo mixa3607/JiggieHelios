@@ -2,19 +2,19 @@
 
 public static partial class JiggieBinaryResponse
 {
+    [JiggieResponseObject(JiggieBinaryCommandType.RECORD_UPDATE)]
     public class RecordUpdateMsg : IJiggieBinaryResponse
     {
         public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public required JiggieBinaryCommandType Type { get; set; }
+        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.RECORD_UPDATE;
         public required ushort UserId { get; set; }
         public required IReadOnlyList<JukeRecord> Rotations { get; set; }
 
-        public static RecordUpdateMsg Decode(JiggieBinaryCommandType cmdType, BinaryReader reader)
+        public static RecordUpdateMsg Decode(BinaryReader reader)
         {
             var recs = new List<JukeRecord>();
             var msg = new RecordUpdateMsg
             {
-                Type = cmdType,
                 UserId = reader.ReadUInt16(),
                 Rotations = recs,
             };

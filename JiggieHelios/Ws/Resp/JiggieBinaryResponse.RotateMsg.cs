@@ -2,19 +2,19 @@
 
 public static partial class JiggieBinaryResponse
 {
+    [JiggieResponseObject(JiggieBinaryCommandType.ROTATE)]
     public class RotateMsg : IJiggieBinaryResponse
     {
         public JiggieResponseType ResponseType => JiggieResponseType.Binary;
-        public JiggieBinaryCommandType Type { get; set; }
+        public JiggieBinaryCommandType Type => JiggieBinaryCommandType.ROTATE;
         public ushort UserId { get; set; }
         public IReadOnlyList<Rot> Rotations { get; set; }
 
-        public static RotateMsg Decode(JiggieBinaryCommandType cmdType, BinaryReader reader)
+        public static RotateMsg Decode(BinaryReader reader)
         {
             var rotations = new List<Rot>();
             var msg = new RotateMsg
             {
-                Type = cmdType,
                 UserId = reader.ReadUInt16(),
                 Rotations = rotations,
             };
