@@ -1,11 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Reactive.Linq;
 using JiggieHelios;
-using JiggieHelios.Ws.Events;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
-using Websocket.Client;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -20,41 +19,57 @@ var factory = LoggerFactory.Create(builder =>
 var _logger = factory.CreateLogger<Program>();
 
 Console.WriteLine("Hello, World!");
+ushort userId = 0;
+var username = "HELIOS";
+var color = "#FFFFFF";
+var room = "T_oxcU";
+var secret = "JGjeYmR9mql_jFlXdJxd";
 
-var wsClient = new WsClient();
-await wsClient.StartAsync();
 
-var evtTask = Task.Run(async () =>
+var wsClient = new JiggieWsClient(factory.CreateLogger<JiggieWsClient>(), new JiggieProtocolTranslator());
+wsClient.MessageReceived
+    .Where(x => x.ResponseType == JiggieResponseType.Binary)
+    .Select(x => (IJiggieBinaryResponse)x)
+    .Where(x => x.Type == JiggieBinaryCommandType.HEARTBEAT)
+    .Select(x => (JiggieBinaryResponse.HeartbeatMsg)x)
+    .Subscribe(x =>
+    {
+        _logger.LogInformation("Rec heartbeat");
+        wsClient.Send(new JiggieBinaryRequest.HeartbeatMsg() {UserId = userId, Type = JiggieBinaryCommandType.HEARTBEAT});
+    });
+
+wsClient.MessageReceived
+    .Where(x => x.ResponseType == JiggieResponseType.Json)
+    .Select(x => (IJiggieJsonResponse)x)
+    .Where(x => x.Type == "me")
+    .Select(x => (JiggieJsonResponse.MeMsg)x)
+    .Subscribe(x =>
+    {
+        _logger.LogInformation("Me rec");
+        userId = x.Id;
+    });
+
+wsClient.MessageReceived.Subscribe(x =>
 {
-    _logger.LogInformation("Begin events reading loop");
-    var evt = await wsClient.EventsChannel.Reader.ReadAsync();
-    if (evt.Type == WsClientEventType.State)
+    _logger.LogInformation("Receive {type} msg", x.ResponseType);
+    if (x.ResponseType == JiggieResponseType.Json)
     {
-        var m = (WsClientEventState)evt;
-        _logger.LogDebug("Receive msg len {type}:{len}", m.Type, 0);
+        _logger.LogInformation("Msg: {@msg}", x);
     }
-    else if (evt.Type == WsClientEventType.Message)
+
+    if (x.ResponseType == JiggieResponseType.Binary)
     {
-        var m = (WsClientEventMessageReceive)evt;
-        _logger.LogDebug("Receive msg len {type}:{len}", m.Type, m.MessageData.Count);
+        _logger.LogInformation("Msg: {@msg}", x);
     }
 });
 
-var exitEvent = new ManualResetEvent(false);
-var url = new Uri("wss://xxx");
-
-using (var client = new WebsocketClient(url))
+await wsClient.StartAsync();
+wsClient.Send(new JiggieJsonRequest.UserMsg()
 {
-    client.ReconnectTimeout = TimeSpan.FromSeconds(30);
-    client.ReconnectionHappened.Subscribe(info =>
-        Log.Information($"Reconnection happened, type: {info.Type}"));
+    Color = color,
+    Name = username,
+    Room = room,
+    Secret = secret,
+});
 
-    client.MessageReceived.Subscribe(msg => Log.Information($"Message received: {msg}"));
-    client.Start();
-
-    Task.Run(() => client.Send("{ message }"));
-
-    exitEvent.WaitOne();
-}
-
-await Task.WhenAll(evtTask);
+await Task.Delay(TimeSpan.FromHours(10));

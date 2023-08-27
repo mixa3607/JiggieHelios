@@ -20,7 +20,7 @@ public static class JiggieJsonResponse
     {
         public JiggieResponseType ResponseType => JiggieResponseType.Json;
         public string Type => "me";
-        public long Id { get; set; }
+        public ushort Id { get; set; }
     }
 
     public class PointsMsg : IJiggieJsonResponse

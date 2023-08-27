@@ -1,6 +1,6 @@
 ﻿using JiggieHelios;
 
-public interface IJiggieBinaryRequest
+public interface IJiggieBinaryRequest : IJiggieRequest
 {
     JiggieBinaryCommandType Type { get; }
 }
