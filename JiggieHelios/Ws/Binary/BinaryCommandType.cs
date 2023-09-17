@@ -1,6 +1,6 @@
-﻿namespace JiggieHelios;
+﻿namespace JiggieHelios.Ws.Binary;
 
-public enum JiggieBinaryCommandType
+public enum BinaryCommandType
 {
     PICK = 0x1,
     MOVE = 0x2,

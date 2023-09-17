@@ -1,10 +1,13 @@
-﻿using System;
-using System.Reflection;
-using System.Text;
-using JiggieHelios;
+﻿using System.Reflection;
+using JiggieHelios.Ws.Binary;
+using JiggieHelios.Ws.Binary.Cmd;
+using JiggieHelios.Ws.Req;
+using JiggieHelios.Ws.Resp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+
+namespace JiggieHelios;
 
 public class JiggieProtocolTranslator
 {
@@ -13,46 +16,49 @@ public class JiggieProtocolTranslator
         NullValueHandling = NullValueHandling.Ignore,
         ContractResolver = new CamelCasePropertyNamesContractResolver(),
     };
-    private readonly Dictionary<string, Type> _respTypes = new()
-    {
-        { new JiggieJsonResponse.VersionMsg().Type, typeof(JiggieJsonResponse.VersionMsg) },
-        { new JiggieJsonResponse.ChatMsg().Type, typeof(JiggieJsonResponse.ChatMsg) },
-        { new JiggieJsonResponse.MeMsg().Type, typeof(JiggieJsonResponse.MeMsg) },
-        { new JiggieJsonResponse.PointsMsg().Type, typeof(JiggieJsonResponse.PointsMsg) },
-        { new JiggieJsonResponse.UsersMsg().Type, typeof(JiggieJsonResponse.UsersMsg) },
-    };
 
-    private readonly Dictionary<JiggieBinaryCommandType, Action<object, BinaryWriter>> _binReqMaps = new()
-    {
-        { JiggieBinaryCommandType.HEARTBEAT, (obj, writer) => ((JiggieBinaryRequest.HeartbeatMsg)obj).Encode(writer) },
-    };
+    private readonly Dictionary<string, Func<JObject, IJiggieJsonResponse>> _jsonRespMap =
+        BuildJsonRespMap();
 
-    private readonly Dictionary<JiggieBinaryCommandType, Func<BinaryReader, IJiggieBinaryResponse>> _binRespMap =
-        BuildRespMap();
-        /*new()
-    {
-        { JiggieBinaryCommandType.PICK, JiggieBinaryResponse.PickMsg.Decode }, 
-        { JiggieBinaryCommandType.MOVE, JiggieBinaryResponse.MoveMsg.Decode },
-        { JiggieBinaryCommandType.DROP, JiggieBinaryResponse.DropMsg.Decode },
-        { JiggieBinaryCommandType.SELECT, JiggieBinaryResponse.SelectMsg.Decode },
-        { JiggieBinaryCommandType.DESELECT, JiggieBinaryResponse.DeselectMsg.Decode },
-        { JiggieBinaryCommandType.LOCK, JiggieBinaryResponse.LockMsg.Decode },
-        { JiggieBinaryCommandType.UNLOCK, JiggieBinaryResponse.UnlockMsg.Decode },
-        { JiggieBinaryCommandType.STEAL, JiggieBinaryResponse.StealMsg.Decode },
-        { JiggieBinaryCommandType.MERGE, JiggieBinaryResponse.MergeMsg.Decode },
-        { JiggieBinaryCommandType.ROTATE, JiggieBinaryResponse.RotateMsg.Decode },
-        { JiggieBinaryCommandType.RECORD_UPDATE, JiggieBinaryResponse.RecordUpdateMsg.Decode },
-        { JiggieBinaryCommandType.HEARTBEAT, JiggieBinaryResponse.HeartbeatMsg.Decode },
-    };*/
+    private readonly Dictionary<BinaryCommandType, Func<BinaryReader, IJiggieBinaryObject>> _binRespMap =
+        BuildBinaryRespMap();
 
-    private static Dictionary<JiggieBinaryCommandType, Func<BinaryReader, IJiggieBinaryResponse>> BuildRespMap()
+    private readonly Dictionary<BinaryCommandType, Action<IJiggieBinaryObject, BinaryWriter>> _binReqMaps =
+        BuildBinaryReqMap();
+
+    private static Dictionary<BinaryCommandType, Action<IJiggieBinaryObject, BinaryWriter>> BuildBinaryReqMap()
     {
-        return typeof(JiggieBinaryResponse).Assembly
+        return typeof(BinaryCommandType).Assembly
             .GetTypes()
-            .Where(x => typeof(IJiggieBinaryResponse).IsAssignableFrom(x))
+            .Where(x => typeof(IJiggieBinaryObject).IsAssignableFrom(x))
             .Select(x =>
             {
-                var attr = x.GetCustomAttribute<JiggieResponseObjectAttribute>();
+                var attr = x.GetCustomAttribute<JiggieBinaryObjectAttribute>();
+                if (attr == null)
+                    return null;
+                return new
+                {
+                    attr.BinaryType,
+                    Type = x,
+                    Method = x.GetMethod("Encode")
+                };
+            })
+            .Where(x => x?.Method != null)
+            .ToDictionary(
+                k => k!.BinaryType,
+                v => (Action<IJiggieBinaryObject, BinaryWriter>)((req, reader) =>
+                    v!.Method!.Invoke(req, new object?[] { reader }))
+            );
+    }
+
+    private static Dictionary<BinaryCommandType, Func<BinaryReader, IJiggieBinaryObject>> BuildBinaryRespMap()
+    {
+        return typeof(BinaryCommandType).Assembly
+            .GetTypes()
+            .Where(x => typeof(IJiggieBinaryObject).IsAssignableFrom(x))
+            .Select(x =>
+            {
+                var attr = x.GetCustomAttribute<JiggieBinaryObjectAttribute>();
                 if (attr == null)
                     return null;
                 return new
@@ -65,32 +71,39 @@ public class JiggieProtocolTranslator
             .Where(x => x != null)
             .ToDictionary(
                 k => k!.BinaryType,
-                v => (Func<BinaryReader, IJiggieBinaryResponse>)((reader) => CallDecode(v!.DecodeMethod, reader))
+                v => (Func<BinaryReader, IJiggieBinaryObject>)((reader) =>
+                    (IJiggieBinaryObject)v!.DecodeMethod.Invoke(null, new object?[] { reader })!)
             );
     }
 
-    private static IJiggieBinaryResponse CallDecode(MethodInfo methodInfo, BinaryReader reader)
+    private static Dictionary<string, Func<JObject, IJiggieJsonResponse>> BuildJsonRespMap()
     {
-        return (IJiggieBinaryResponse)methodInfo.Invoke(null, new object?[] { reader })!;
+        return typeof(JiggieJsonResponse).Assembly
+            .GetTypes()
+            .Where(x => typeof(IJiggieJsonResponse).IsAssignableFrom(x))
+            .Select(x =>
+            {
+                var attr = x.GetCustomAttribute<JiggieJsonResponseObjectAttribute>();
+                if (attr == null)
+                    return null;
+                return new
+                {
+                    attr.JsonType,
+                    Type = x,
+                    Method = x.GetMethod("Decode")
+                };
+            })
+            .Where(x => x?.Method != null)
+            .Where(x => x != null)
+            .ToDictionary(
+                k => k!.JsonType,
+                v => (Func<JObject, IJiggieJsonResponse>)((json) =>
+                    (IJiggieJsonResponse)v!.Method.Invoke(null, new object?[] { json })!)
+            );
     }
 
-    public IJiggieJsonResponse DecodeJsonResponse(string text)
-    {
-        var jsonObj = JObject.Parse(text);
-        var msgName = jsonObj["type"]!.Value<string>()!;
-        if (_respTypes.TryGetValue(msgName, out var targetType))
-        {
-            return (IJiggieJsonResponse)jsonObj.ToObject(targetType)!;
-        }
 
-        return new JiggieJsonResponse.RawMsg()
-        {
-            Type = msgName,
-            RawObject = jsonObj
-        };
-    }
-
-    public byte[] EncodeBinaryRequest(IJiggieBinaryRequest req)
+    public byte[] EncodeBinaryRequest(IJiggieBinaryObject req)
     {
         using var memStream = new MemoryStream();
         using var writer = new BinaryWriter(memStream);
@@ -104,14 +117,23 @@ public class JiggieProtocolTranslator
         return jsonStr;
     }
 
-    public IJiggieBinaryResponse DecodeBinaryResponse(byte[] bytes)
+    public IJiggieBinaryObject DecodeBinaryResponse(byte[] bytes)
     {
         using var memStream = new MemoryStream(bytes);
         using var reader = new BinaryReader(memStream);
 
-        var cmdType = (JiggieBinaryCommandType)reader.ReadByte();
+        var cmdType = (BinaryCommandType)bytes[0];
         return _binRespMap.TryGetValue(cmdType, out var action)
             ? action(reader)
-            : JiggieBinaryResponse.RawMsg.Decode(cmdType, reader);
+            : _binRespMap[UnknownBinaryCommand.CommandType](reader);
+    }
+
+    public IJiggieJsonResponse DecodeJsonResponse(string text)
+    {
+        var jsonObj = JObject.Parse(text);
+        var msgName = jsonObj["type"]!.Value<string>()!;
+        return _jsonRespMap.TryGetValue(msgName, out var action)
+            ? action(jsonObj)
+            : _jsonRespMap[JiggieJsonResponse.UnknownResponseType](jsonObj);
     }
 }

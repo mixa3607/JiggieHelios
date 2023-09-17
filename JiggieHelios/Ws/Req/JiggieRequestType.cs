@@ -1,4 +1,6 @@
-﻿public enum JiggieRequestType
+﻿namespace JiggieHelios.Ws.Req;
+
+public enum JiggieRequestType
 {
     Unknown,
     Json,

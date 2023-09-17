@@ -1,4 +1,6 @@
-﻿public interface IJiggieRequest
+﻿namespace JiggieHelios.Ws.Req;
+
+public interface IJiggieRequest
 {
     JiggieRequestType RequestType { get; }
 

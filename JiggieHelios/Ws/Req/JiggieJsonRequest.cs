@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 
+namespace JiggieHelios.Ws.Req;
+
 public static class JiggieJsonRequest
 {
     public class UserMsg : IJiggieJsonRequest

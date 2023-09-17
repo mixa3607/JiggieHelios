@@ -1,4 +1,6 @@
-﻿public enum JiggieResponseType
+﻿namespace JiggieHelios.Ws.Resp;
+
+public enum JiggieResponseType
 {
     Unknown,
     Json,

@@ -1,4 +1,6 @@
-﻿public interface IJiggieJsonResponse : IJiggieResponse
+﻿namespace JiggieHelios.Ws.Resp;
+
+public interface IJiggieJsonResponse : IJiggieResponse
 {
     string Type { get; }
 }
