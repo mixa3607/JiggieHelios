@@ -20,6 +20,7 @@ using FFMpegCore.Pipes;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using SixLabors.ImageSharp.Advanced;
+using SkiaSharp;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -37,22 +38,22 @@ var factory = LoggerFactory.Create(builder =>
 var _logger = factory.CreateLogger<Program>();
 _logger.LogInformation("Start");
 
-IEnumerable<IVideoFrame> C()
-{
-    yield return new
-}
+//IEnumerable<IVideoFrame> C()
+//{
+//    yield return new
+//}
 var game = new Game();
 if (true)
 {
 
-    var videoFramesSource = new RawVideoPipeSource()
-    {
-        FrameRate = 30 //set source frame rate
-    };
-    await FFMpegArguments
-        .FromPipeInput(videoFramesSource)
-        .OutputToFile("./files/out.mp4", true, options => options.WithVideoCodec(VideoCodec.LibVpx))
-        .ProcessAsynchronously();
+    //var videoFramesSource = new RawVideoPipeSource()
+    //{
+    //    FrameRate = 30 //set source frame rate
+    //};
+    //await FFMpegArguments
+    //    .FromPipeInput(videoFramesSource)
+    //    .OutputToFile("./files/out.mp4", true, options => options.WithVideoCodec(VideoCodec.LibVpx))
+    //    .ProcessAsynchronously();
 
     var rep = new WsReplay("./files/caps/2023.09.17 11.07.39.cap");
     var proto = new JiggieProtocolTranslator();
@@ -124,7 +125,9 @@ if (true)
 
                 render.Canvas = new Image<Argb32>(game.GameState.RoomInfo.BoardWidth,
                     game.GameState.RoomInfo.BoardHeight,
-                    new Argb32(255, 255, 255)).GetPixelMemoryGroup();
+                    new Argb32(255, 255, 255));
+
+                
                 foreach (var set in game.GameState.Sets)
                 {
                     var setImage = Image.Load($"./files/caps/{set.Image}");

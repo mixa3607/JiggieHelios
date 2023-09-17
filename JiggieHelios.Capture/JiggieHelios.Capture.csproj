@@ -10,12 +10,18 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="FFMpegCore" Version="5.1.0" />
+    <PackageReference Include="FFMpegCore.Extensions.SkiaSharp" Version="5.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.0.2" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.0.0" />
+    <PackageReference Include="SkiaSharp" Version="2.88.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\JiggieHelios\JiggieHelios.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="St\ren\" />
   </ItemGroup>
 
 </Project>
