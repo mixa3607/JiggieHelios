@@ -1,12 +1,7 @@
 ﻿using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using FFMpegCore.Pipes;
 using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
-using SixLabors.ImageSharp.Advanced;
-using SixLabors.ImageSharp.Formats;
 
 namespace JiggieHelios.Capture.St;
 
@@ -379,100 +374,3 @@ public class Game
         group.Height = (yMax - yMin + 1) * h;
     }
 }
-
-public class GameState
-{
-    public long PointsQty { get; set; }
-    public string? BackendVersion { get; set; }
-    public ushort MeId { get; set; }
-    public RoomInfo RoomInfo { get; } = new RoomInfo();
-    public List<RoomSetInfo> Sets { get; } = new List<RoomSetInfo>();
-    public List<PieceGroup> Groups { get; } = new List<PieceGroup>();
-    public List<GameUser> Users { get; } = new List<GameUser>();
-}
-
-public class PieceGroup
-{
-    public ushort Id { get; set; }
-    public List<uint> Ids { get; set; } = new List<uint>();
-    public bool Locked { get; set; }
-    public PieceGroupRotation Rotation { get; set; }
-    public int Set { get; set; }
-    public Vector2 Coordinates { get; set; }
-
-    public List<Piece> Pieces { get; set; } = new List<Piece>();
-    public uint SelectedByUser { get; set; }
-    public float Width { get; set; }
-    public float Height { get; set; }
-}
-
-public class Piece
-{
-    public ushort IndexInSet { get; set; }
-    public ushort ColumnInSet { get; set; }
-    public ushort RowInSet { get; set; }
-    public Vector2 OffsetInGroup { get; set; }
-    public Vector2 Origin { get; set; }
-}
-
-public enum PieceGroupRotation : byte
-{
-    Deg0 = 0,
-    Deg90 = 1,
-    Deg180 = 2,
-    Deg270 = 3,
-}
-
-public class GameUser
-{
-    public uint Id { get; set; }
-    public string? Name { get; set; }
-    public string? Color { get; set; }
-
-    public bool IsMe { get; set; }
-}
-
-public class RoomSetInfo
-{
-    public uint Cols { get; set; }
-    public uint Rows { get; set; }
-    public double Height { get; set; }
-    public double Width { get; set; }
-    public long ImageWidth { get; set; }
-    public long ImageHeight { get; set; }
-    public string Image { get; set; } = null!;
-    public bool IsVideo { get; set; }
-
-    public float PieceWidth { get; set; }
-    public float PieceHeight { get; set; }
-    public List<Piece> Pieces { get; set; } = new List<Piece>();
-}
-
-public class RoomInfo
-{
-    public int BoardHeight { get; set; }
-    public int BoardWidth { get; set; }
-    public long? EndTime { get; set; }
-    public long? StartTime { get; set; }
-    public bool HidePreview { get; set; }
-    public long Jitter { get; set; }
-    public string? Name { get; set; }
-    public bool NoLockUnlock { get; set; }
-    public bool NoMultiSelect { get; set; }
-    public bool? NoRectSelect { get; set; }
-    public long Pieces { get; set; }
-    public bool Rotation { get; set; }
-    public long Seed { get; set; }
-    public bool? Auth { get; set; }
-    public string Thumb { get; set; } = null!;
-    public bool Juke { get; set; }
-    public bool Scores { get; set; }
-    public bool Zigzag { get; set; }
-    public bool Square { get; set; }
-    public bool FakeEdge { get; set; }
-    public bool NoStack { get; set; }
-    public int TabSize { get; set; }
-    public string? Key { get; set; }
-    public IReadOnlyList<string>? Tags { get; set; }
-}
-

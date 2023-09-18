@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Numerics;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using JiggieHelios.Ws.Req;
 using JiggieHelios;
 using JiggieHelios.Capture.St;
@@ -15,12 +16,9 @@ using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
 using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.Processing;
 using FFMpegCore.Pipes;
 using FFMpegCore;
 using FFMpegCore.Enums;
-using SixLabors.ImageSharp.Advanced;
-using SkiaSharp;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -38,30 +36,69 @@ var factory = LoggerFactory.Create(builder =>
 var _logger = factory.CreateLogger<Program>();
 _logger.LogInformation("Start");
 
+GlobalFFOptions.Configure(new FFOptions
+{
+    BinaryFolder = @"C:\Users\mixa3607\Desktop\portables\ffmpeg-2022-02-28-git-7a4840a8ca-full_build\bin",
+    TemporaryFilesFolder = "./tmp"
+});
+//var vids = Directory.GetFiles("./files", "out*.mp4").OrderBy(x => x).ToArray();
+//FFMpeg.Join("./files/combined.mp4", vids);
+//return;
+
+var totalSegments = new ReplayRender(factory.CreateLogger<ReplayRender>(), 0, 0).GetTotalFrames();
+var framesPerSegment = 100;
+var segments = totalSegments / framesPerSegment;
+if (segments * framesPerSegment < totalSegments)
+    segments++;
+
+var maxParallelism = 10;
+await Parallel.ForEachAsync(Enumerable.Range(0, segments), new ParallelOptions()
+{
+    MaxDegreeOfParallelism = maxParallelism
+}, (i, token) =>
+{
+    var r = new ReplayRender(factory.CreateLogger<ReplayRender>(), i, framesPerSegment);
+    return new ValueTask(r.DoAsync());
+});
+
+return;
+
 //IEnumerable<IVideoFrame> C()
 //{
 //    yield return new
 //}
 var game = new Game();
-if (true)
+
+if (false)
 {
-
-    //var videoFramesSource = new RawVideoPipeSource()
-    //{
-    //    FrameRate = 30 //set source frame rate
-    //};
-    //await FFMpegArguments
-    //    .FromPipeInput(videoFramesSource)
-    //    .OutputToFile("./files/out.mp4", true, options => options.WithVideoCodec(VideoCodec.LibVpx))
-    //    .ProcessAsynchronously();
-
-    var rep = new WsReplay("./files/caps/2023.09.17 11.07.39.cap");
+    var subj = new Subject<ImageWrapper>();
+    GlobalFFOptions.Configure(new FFOptions
+    {
+        BinaryFolder = @"C:\Users\mixa3607\Desktop\portables\ffmpeg-2022-02-28-git-7a4840a8ca-full_build\bin",
+        TemporaryFilesFolder = "./tmp"
+    });
+    var videoFramesSource = new RawVideoPipeSource(CustomFramesEnumerator.FromObservable(subj))
+    {
+        FrameRate = 1 //set source frame rate
+    };
+    var ffmpegTask = Task.Run(async () =>
+    {
+        return await FFMpegArguments
+            .FromPipeInput(videoFramesSource)
+            .OutputToFile("./files/out2.mp4", true, options =>
+                options
+                    .WithVideoCodec(VideoCodec.LibX264)
+                    .WithVideoFilters(f => f.Scale(1920, -1))
+            )
+            .ProcessAsynchronously();
+    });
+    var rep = new WsReplay("./files/caps/2023.09.18 01.35.20.cap");
     var proto = new JiggieProtocolTranslator();
 
     var beginDraw = false;
     var render = new Render();
 
-    var frameTime = 200;
+    var frameTime = 1000 / videoFramesSource.FrameRate;
     var frameStart = DateTimeOffset.MinValue;
     var frameIdx = 0;
 
@@ -83,6 +120,8 @@ if (true)
 
         while (beginDraw && commandTime > frameStart.AddMilliseconds(frameTime))
         {
+            _logger.LogInformation("Process frame {idx}, time: {t}", frameIdx,
+                TimeSpan.FromMilliseconds(frameIdx * frameTime));
             var canvas = render.Canvas!;
             canvas.Mutate(x => x.Fill(Color.White));
             foreach (var group in game.GameState.Groups)
@@ -97,7 +136,8 @@ if (true)
                 }
             }
 
-            canvas.SaveAsJpeg($"./files/./frames/{frameIdx.ToString().PadLeft(5, '0')}.jpg");
+            // canvas.SaveAsJpeg($"./files/./frames/{frameIdx.ToString().PadLeft(5, '0')}.jpg");
+            subj.OnNext(new ImageWrapper(canvas));
             frameIdx++;
             frameStart = frameStart.AddMilliseconds(frameTime);
         }
@@ -107,6 +147,7 @@ if (true)
         {
             beginDraw = false;
         }
+
         if (cap != null && cap.FromServer)
         {
             IJiggieResponse a = cap.MessageType switch
@@ -123,11 +164,10 @@ if (true)
 
                 frameStart = cap.DateTime;
 
-                render.Canvas = new Image<Argb32>(game.GameState.RoomInfo.BoardWidth,
+                render.Canvas = new Image<Rgba32>(game.GameState.RoomInfo.BoardWidth,
                     game.GameState.RoomInfo.BoardHeight,
-                    new Argb32(255, 255, 255));
+                    new Rgba32(255, 255, 255));
 
-                
                 foreach (var set in game.GameState.Sets)
                 {
                     var setImage = Image.Load($"./files/caps/{set.Image}");
@@ -157,7 +197,9 @@ if (true)
         }
     }
 
-   
+    subj.OnCompleted();
+    await ffmpegTask;
+
 
     return;
 }
@@ -260,12 +302,12 @@ ushort userId = 0;
 var userMessage = new JiggieJsonRequest.UserMsg()
 {
     Color = "#ffa5a5",
-    Name = "HELIOS",
-    Room = "64vIAj",
+    Name = "HELIOS-cap",
+    Room = "XJxIhH",
     Secret = "JGjeYmR9mql_jFlXdJxd",
 };
 //var game = new Game();
-var room = (Room?)null;
+//var room = (Room?)null;
 
 wsClient.MessageReceived.Subscribe(game.Apply);
 
@@ -285,7 +327,7 @@ wsClient
     .Subscribe(async x =>
     {
         return;
-        _logger.LogInformation("Run move");
+        /*_logger.LogInformation("Run move");
 
         foreach (var group in room.Groups)
         {
@@ -356,7 +398,7 @@ wsClient
                     Task.Delay(20).Wait();
                 }
             }
-        }
+        }*/
     });
 
 wsClient.MessageReceived.Subscribe(x =>
