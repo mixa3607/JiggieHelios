@@ -7,22 +7,22 @@ using JiggieHelios.Ws.Resp.Cmd;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp.Drawing.Processing;
 
-namespace JiggieHelios.Capture.St;
+namespace JiggieHelios.Capture.St.V1;
 
-public class ReplayRender
+public class ReplayRenderV1
 {
     private readonly WsReplay _replay;
-    private readonly Render _render;
+    private readonly RenderV1 _render;
     private readonly FFMpegArgumentProcessor _ffMpegArguments;
     private readonly int _frameRate = 30;
-    private readonly ILogger<ReplayRender> _logger;
+    private readonly ILogger<ReplayRenderV1> _logger;
     private readonly int _segment;
     private readonly int _segmentFrames;
     private readonly Game _game;
 
     public string OutputFile { get; }
 
-    public ReplayRender(ILogger<ReplayRender> logger, int segment, int segmentFrames)
+    public ReplayRenderV1(ILogger<ReplayRenderV1> logger, int segment, int segmentFrames)
     {
         _logger = logger;
         _segment = segment;
@@ -40,7 +40,7 @@ public class ReplayRender
                     .WithVideoCodec(VideoCodec.LibX264)
                     .WithVideoFilters(f => f.Scale(1920, -1))
             );
-        _render = new Render();
+        _render = new RenderV1();
         _game = new Game();
     }
 
@@ -141,7 +141,7 @@ public class ReplayRender
                         _segment);
                     var canvas = _render.Canvas!;
                     canvas.Mutate(x => x.Fill(Color.White));
-                    foreach (var group in _game.GameState.Groups)
+                    foreach (var group in _game.State.Groups)
                     {
                         foreach (var piece in group.Pieces)
                         {
@@ -197,14 +197,14 @@ public class ReplayRender
     {
         Configuration configuration = Configuration.Default.Clone();
         configuration.PreferContiguousImageBuffers = true;
-        _render.Canvas = new Image<Rgba32>(configuration, _game.GameState.RoomInfo.BoardWidth,
-            _game.GameState.RoomInfo.BoardHeight,
+        _render.Canvas = new Image<Rgba32>(configuration, _game.State.RoomInfo.BoardWidth,
+            _game.State.RoomInfo.BoardHeight,
             new Rgba32(255, 255, 255));
 
-        foreach (var set in _game.GameState.Sets)
+        foreach (var set in _game.State.Sets)
         {
             var setImage = Image.Load($"./files/caps/{set.Image}");
-            var setRender = new RenderSet();
+            var setRender = new RenderSetV1();
             foreach (var piece in set.Pieces)
             {
                 var x = (int)(piece.ColumnInSet * set.PieceWidth);
@@ -218,7 +218,7 @@ public class ReplayRender
                     crop.Y = setImage.Height - crop.Height;
 
                 var pieceImg = setImage.Clone(o => o.Crop(crop));
-                setRender.Pieces.Add(new RenderSetPiece()
+                setRender.Pieces.Add(new RenderSetPieceV1()
                 {
                     PieceImage = pieceImg
                 });

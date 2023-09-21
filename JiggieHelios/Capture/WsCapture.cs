@@ -4,8 +4,9 @@ using Websocket.Client;
 
 public class WsCapture : IWsCapture
 {
-    private readonly FileStream _stream;
+    private readonly Stream _stream;
     private readonly BinaryWriter _writer;
+    public int CommandsCount { get; private set; }
 
     public WsCapture()
     {
@@ -17,10 +18,17 @@ public class WsCapture : IWsCapture
         _writer = new BinaryWriter(_stream);
     }
 
+    public WsCapture(Stream stream)
+    {
+        _stream = stream;
+        _writer = new BinaryWriter(_stream);
+    }
+
     public void Write(DateTimeOffset dt, ResponseMessage msg)
     {
         lock (this)
         {
+            CommandsCount++;
             new WsCapturedCommand()
             {
                 DateTime = dt,
@@ -29,7 +37,6 @@ public class WsCapture : IWsCapture
                 BinaryData = msg.MessageType == WebSocketMessageType.Binary ? msg.Binary : null,
                 TextData = msg.MessageType == WebSocketMessageType.Text ? msg.Text : null,
             }.Write(_writer);
-            _writer.Flush();
         }
     }
 
@@ -37,15 +44,15 @@ public class WsCapture : IWsCapture
     {
         lock (this)
         {
+            CommandsCount++;
             new WsCapturedCommand()
             {
                 DateTime = dt,
-                FromServer = true,
+                FromServer = false,
                 MessageType = WebSocketMessageType.Text,
                 BinaryData = null,
                 TextData = msg
             }.Write(_writer);
-            _writer.Flush();
         }
     }
 
@@ -53,15 +60,15 @@ public class WsCapture : IWsCapture
     {
         lock (this)
         {
+            CommandsCount++;
             new WsCapturedCommand()
             {
                 DateTime = dt,
-                FromServer = true,
+                FromServer = false,
                 MessageType = WebSocketMessageType.Binary,
                 BinaryData = msg,
                 TextData = null
             }.Write(_writer);
-            _writer.Flush();
         }
     }
 }

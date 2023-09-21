@@ -1,4 +1,4 @@
-﻿public class WsReplay
+﻿public class WsReplay: IDisposable
 {
     private readonly FileStream _stream;
     private readonly BinaryReader _reader;
@@ -23,5 +23,19 @@
         }
 
         return WsCapturedCommand.Read(_reader);
+    }
+
+    public IEnumerable<WsCapturedCommand> GetEnumerator()
+    {
+        while (Available())
+        {
+            yield return WsCapturedCommand.Read(_reader);
+        }
+    }
+
+    public void Dispose()
+    {
+        _stream.Dispose();
+        _reader.Dispose();
     }
 }

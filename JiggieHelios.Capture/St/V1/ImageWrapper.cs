@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using FFMpegCore.Pipes;
 
-namespace JiggieHelios.Capture.St;
+namespace JiggieHelios.Capture.St.V1;
 
 public class ImageWrapper : IVideoFrame
 {

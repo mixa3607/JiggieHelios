@@ -15,10 +15,8 @@ using JiggieHelios.Ws.Binary;
 using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
-using SixLabors.ImageSharp.Drawing.Processing;
-using FFMpegCore.Pipes;
 using FFMpegCore;
-using FFMpegCore.Enums;
+using JiggieHelios.Capture.St.V1;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -45,7 +43,7 @@ GlobalFFOptions.Configure(new FFOptions
 //FFMpeg.Join("./files/combined.mp4", vids);
 //return;
 
-var totalSegments = new ReplayRender(factory.CreateLogger<ReplayRender>(), 0, 0).GetTotalFrames();
+var totalSegments = new ReplayRenderV1(factory.CreateLogger<ReplayRenderV1>(), 0, 0).GetTotalFrames();
 var framesPerSegment = 100;
 var segments = totalSegments / framesPerSegment;
 if (segments * framesPerSegment < totalSegments)
@@ -57,7 +55,7 @@ await Parallel.ForEachAsync(Enumerable.Range(0, segments), new ParallelOptions()
     MaxDegreeOfParallelism = maxParallelism
 }, (i, token) =>
 {
-    var r = new ReplayRender(factory.CreateLogger<ReplayRender>(), i, framesPerSegment);
+    var r = new ReplayRenderV1(factory.CreateLogger<ReplayRenderV1>(), i, framesPerSegment);
     return new ValueTask(r.DoAsync());
 });
 
@@ -69,7 +67,7 @@ return;
 //}
 var game = new Game();
 
-if (false)
+/*if (false)
 {
     var subj = new Subject<ImageWrapper>();
     GlobalFFOptions.Configure(new FFOptions
@@ -124,7 +122,7 @@ if (false)
                 TimeSpan.FromMilliseconds(frameIdx * frameTime));
             var canvas = render.Canvas!;
             canvas.Mutate(x => x.Fill(Color.White));
-            foreach (var group in game.GameState.Groups)
+            foreach (var group in game.State.Groups)
             {
                 foreach (var piece in group.Pieces)
                 {
@@ -164,11 +162,11 @@ if (false)
 
                 frameStart = cap.DateTime;
 
-                render.Canvas = new Image<Rgba32>(game.GameState.RoomInfo.BoardWidth,
-                    game.GameState.RoomInfo.BoardHeight,
+                render.Canvas = new Image<Rgba32>(game.State.RoomInfo.BoardWidth,
+                    game.State.RoomInfo.BoardHeight,
                     new Rgba32(255, 255, 255));
 
-                foreach (var set in game.GameState.Sets)
+                foreach (var set in game.State.Sets)
                 {
                     var setImage = Image.Load($"./files/caps/{set.Image}");
                     var setRender = new RenderSet();
@@ -202,7 +200,7 @@ if (false)
 
 
     return;
-}
+}*/
 
 if (false)
 {
@@ -226,7 +224,7 @@ if (false)
         }
     }
 
-    var set = game.GameState.Sets[0];
+    var set = game.State.Sets[0];
     var setImage = Image.Load("./files/caps/cdee5838498cf2e5d182b116334e6b3f.jpeg");
     var pieceImages = new Image[set.Pieces.Count];
     for (var i = 0; i < set.Pieces.Count; i++)
@@ -245,10 +243,10 @@ if (false)
         pieceImages[i] = pieceImg;
     }
 
-    var canvas = new Image<Argb32>(game.GameState.RoomInfo.BoardWidth, game.GameState.RoomInfo.BoardHeight,
+    var canvas = new Image<Argb32>(game.State.RoomInfo.BoardWidth, game.State.RoomInfo.BoardHeight,
         new Argb32(255, 255, 255));
 
-    foreach (var group in game.GameState.Groups)
+    foreach (var group in game.State.Groups)
     {
         foreach (var piece in group.Pieces)
         {
@@ -290,9 +288,9 @@ var wsClientOptions = new JiggieWsClientOptions()
         { "Accept-Language", "ru-RU,ru;q=0.9" },
     }
 };
+
 var wsClient =
-    new JiggieWsClient(factory.CreateLogger<JiggieWsClient>(), new JiggieProtocolTranslator(), wsClientOptions,
-        new WsCapture());
+    new JiggieWsClient(factory.CreateLogger<JiggieWsClient>(), new JiggieProtocolTranslator(), wsClientOptions);
 
 
 //#################################
@@ -316,7 +314,7 @@ wsClient
     .Subscribe(x =>
     {
         _logger.LogInformation("Heartbeat");
-        wsClient.Send(new HeartbeatBinaryCommand() { UserId = game.GameState.MeId });
+        wsClient.Send(new HeartbeatBinaryCommand() { UserId = game.State.MeId });
     });
 
 

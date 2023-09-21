@@ -24,7 +24,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="St\ren\" />
+	  <Folder Include="St\V2\" />
 	</ItemGroup>
 
 </Project>

@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using System.Net.WebSockets;
+using System.Numerics;
+using System.Xml.Linq;
 using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
@@ -7,7 +9,24 @@ namespace JiggieHelios.Capture.St;
 
 public class Game
 {
-    public GameState GameState { get; } = new GameState();
+    public GameState State { get; } = new GameState();
+
+    public void Apply(WsCapturedCommand cap, JiggieProtocolTranslator protoTranslator)
+    {
+        if (cap is { FromServer: true })
+        {
+            IJiggieResponse? a = cap.MessageType switch
+            {
+                WebSocketMessageType.Binary => protoTranslator.DecodeBinaryResponse(cap.BinaryData!),
+                WebSocketMessageType.Text => protoTranslator.DecodeJsonResponse(cap.TextData!),
+                _ => null
+            };
+            if (a == null)
+                return;
+
+            Apply(a);
+        }
+    }
 
     public void Apply(IJiggieResponse resp)
     {
@@ -71,7 +90,7 @@ public class Game
     {
         foreach (var gr in cmd.Groups)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == gr.Id);
+            var group = State.Groups.FirstOrDefault(x => x.Id == gr.Id);
             if (group != null)
             {
                 group.SelectedByUser = cmd.UserId;
@@ -84,7 +103,7 @@ public class Game
     {
         foreach (var gr in cmd.Groups)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == gr.Id);
+            var group = State.Groups.FirstOrDefault(x => x.Id == gr.Id);
             if (group != null)
             {
                 group.Coordinates = new Vector2(gr.X, gr.Y);
@@ -96,7 +115,7 @@ public class Game
     {
         foreach (var gr in cmd.Groups)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == gr.Id);
+            var group = State.Groups.FirstOrDefault(x => x.Id == gr.Id);
             if (group != null)
             {
                 group.SelectedByUser = 0;
@@ -109,7 +128,7 @@ public class Game
     {
         foreach (var groupId in cmd.GroupIds)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == groupId);
+            var group = State.Groups.FirstOrDefault(x => x.Id == groupId);
             if (group != null)
                 group.SelectedByUser = cmd.UserId;
         }
@@ -119,7 +138,7 @@ public class Game
     {
         foreach (var groupId in cmd.GroupIds)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == groupId);
+            var group = State.Groups.FirstOrDefault(x => x.Id == groupId);
             if (group != null)
                 group.SelectedByUser = 0;
         }
@@ -129,7 +148,7 @@ public class Game
     {
         foreach (var groupId in cmd.GroupIds)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == groupId);
+            var group = State.Groups.FirstOrDefault(x => x.Id == groupId);
             if (group != null)
                 group.Locked = true;
         }
@@ -139,7 +158,7 @@ public class Game
     {
         foreach (var groupId in cmd.GroupIds)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == groupId);
+            var group = State.Groups.FirstOrDefault(x => x.Id == groupId);
             if (group != null)
                 group.Locked = false;
         }
@@ -150,7 +169,7 @@ public class Game
     {
         foreach (var groupId in cmd.GroupIds)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == groupId);
+            var group = State.Groups.FirstOrDefault(x => x.Id == groupId);
             if (group != null)
                 group.SelectedByUser = 0;
         }
@@ -158,8 +177,8 @@ public class Game
 
     public void Apply(MergeBinaryCommand cmd)
     {
-        var groupA = GameState.Groups.FirstOrDefault(x => x.Id == cmd.GroupIdA);
-        var groupB = GameState.Groups.FirstOrDefault(x => x.Id == cmd.GroupIdB);
+        var groupA = State.Groups.FirstOrDefault(x => x.Id == cmd.GroupIdA);
+        var groupB = State.Groups.FirstOrDefault(x => x.Id == cmd.GroupIdB);
         if (groupA == null || groupB == null || groupA == groupB)
             return;
 
@@ -171,7 +190,7 @@ public class Game
     {
         foreach (var rot in cmd.Rotations)
         {
-            var group = GameState.Groups.FirstOrDefault(x => x.Id == rot.Id);
+            var group = State.Groups.FirstOrDefault(x => x.Id == rot.Id);
             if (group != null)
                 group.Rotation = (PieceGroupRotation)rot.Rotation;
         }
@@ -184,68 +203,73 @@ public class Game
 
     public void Apply(HeartbeatBinaryCommand cmd)
     {
-        //ignore
+        State.HeartbeatRequested = true;
+    }
+
+    public void ResetHeartbeatFlag()
+    {
+        State.HeartbeatRequested = false;
     }
 
     public void Apply(PointsJsonResponse resp)
     {
-        GameState.PointsQty = resp.Qty;
+        State.PointsQty = resp.Qty;
     }
 
     public void Apply(VersionJsonResponse resp)
     {
-        GameState.BackendVersion = resp.Version;
+        State.BackendVersion = resp.Version;
     }
 
     public void Apply(MeJsonResponse resp)
     {
-        GameState.MeId = resp.Id;
-        var me = GameState.Users.FirstOrDefault(x => x.Id == resp.Id);
+        State.MeId = resp.Id;
+        var me = State.Users.FirstOrDefault(x => x.Id == resp.Id);
         if (me != null)
             me.IsMe = true;
     }
 
     public void Apply(UsersJsonResponse resp)
     {
-        GameState.Users.Clear();
-        GameState.Users.AddRange(resp.Users.Select(x => new GameUser()
+        State.Users.Clear();
+        State.Users.AddRange(resp.Users.Select(x => new GameUser()
         {
             Id = x.Id,
             Color = x.Color,
             Name = x.Name,
-            IsMe = GameState.MeId != 0 && GameState.MeId == x.Id
+            IsMe = State.MeId != 0 && State.MeId == x.Id
         }));
     }
 
     public void Apply(RoomJsonResponse resp)
     {
         var r = resp.Room;
-        GameState.RoomInfo.BoardHeight = r.BoardHeight;
-        GameState.RoomInfo.BoardWidth = r.BoardWidth;
-        GameState.RoomInfo.EndTime = r.EndTime;
-        GameState.RoomInfo.StartTime = r.StartTime;
-        GameState.RoomInfo.HidePreview = r.HidePreview;
-        GameState.RoomInfo.Jitter = r.Jitter;
-        GameState.RoomInfo.Name = r.Name;
-        GameState.RoomInfo.NoLockUnlock = r.NoLockUnlock;
-        GameState.RoomInfo.NoMultiSelect = r.NoMultiSelect;
-        GameState.RoomInfo.NoRectSelect = r.NoRectSelect;
-        GameState.RoomInfo.Pieces = r.Pieces;
-        GameState.RoomInfo.Rotation = r.Rotation;
-        GameState.RoomInfo.Seed = r.Seed;
-        GameState.RoomInfo.Auth = r.Auth;
-        GameState.RoomInfo.Thumb = r.Thumb;
-        GameState.RoomInfo.Juke = r.Juke;
-        GameState.RoomInfo.Scores = r.Scores;
-        GameState.RoomInfo.Zigzag = r.Zigzag;
-        GameState.RoomInfo.Square = r.Square;
-        GameState.RoomInfo.FakeEdge = r.FakeEdge;
-        GameState.RoomInfo.NoStack = r.NoStack;
-        GameState.RoomInfo.TabSize = r.TabSize;
-        GameState.RoomInfo.Key = r.Key;
-        GameState.RoomInfo.Tags = r.Tags;
+        State.RoomInfo.BoardHeight = r.BoardHeight;
+        State.RoomInfo.BoardWidth = r.BoardWidth;
+        State.RoomInfo.EndTime = r.EndTime;
+        State.RoomInfo.StartTime = r.StartTime;
+        State.RoomInfo.HidePreview = r.HidePreview;
+        State.RoomInfo.Jitter = r.Jitter;
+        State.RoomInfo.Name = r.Name;
+        State.RoomInfo.NoLockUnlock = r.NoLockUnlock;
+        State.RoomInfo.NoMultiSelect = r.NoMultiSelect;
+        State.RoomInfo.NoRectSelect = r.NoRectSelect;
+        State.RoomInfo.Pieces = r.Pieces;
+        State.RoomInfo.Rotation = r.Rotation;
+        State.RoomInfo.Seed = r.Seed;
+        State.RoomInfo.Auth = r.Auth;
+        State.RoomInfo.Thumb = r.Thumb;
+        State.RoomInfo.Juke = r.Juke;
+        State.RoomInfo.Scores = r.Scores;
+        State.RoomInfo.Zigzag = r.Zigzag;
+        State.RoomInfo.Square = r.Square;
+        State.RoomInfo.FakeEdge = r.FakeEdge;
+        State.RoomInfo.NoStack = r.NoStack;
+        State.RoomInfo.TabSize = r.TabSize;
+        State.RoomInfo.Key = r.Key;
+        State.RoomInfo.Tags = r.Tags;
 
-        GameState.Sets.Clear();
+        State.Sets.Clear();
         foreach (var roomSet in r.Sets)
         {
             var set = new RoomSetInfo()
@@ -263,7 +287,7 @@ public class Game
                 PieceWidth = roomSet.Width / roomSet.Cols,
                 PieceHeight = roomSet.Height / roomSet.Rows,
             };
-            GameState.Sets.Add(set);
+            State.Sets.Add(set);
 
             set.Pieces.EnsureCapacity((int)(set.Rows * set.Cols));
             for (ushort rowIdx = 0; rowIdx < set.Rows; rowIdx++)
@@ -285,7 +309,7 @@ public class Game
             }
         }
 
-        GameState.Groups.Clear();
+        State.Groups.Clear();
         foreach (var roomGroup in r.Groups)
         {
             var group = new PieceGroup()
@@ -299,12 +323,11 @@ public class Game
                 SelectedByUser = 0,
             };
 
-            var set = GameState.Sets[group.Set];
+            var set = State.Sets[group.Set];
             group.Pieces.AddRange(roomGroup.Indices.Select(x => set.Pieces[(int)x]));
             UpdateGroupPieces(group);
-            GameState.Groups.Add(group);
+            State.Groups.Add(group);
         }
-        
     }
 
     private PieceGroup MergeGroups(PieceGroup groupA, PieceGroup groupB, bool? preferA = null)
@@ -329,7 +352,7 @@ public class Game
 
         UpdateGroupPieces(groupB);
 
-        GameState.Groups.Remove(groupA);
+        State.Groups.Remove(groupA);
 
         groupB.Ids.AddRange(groupA.Ids);
         if (groupB.Id > groupA.Id)
@@ -355,7 +378,7 @@ public class Game
         var yMin = group.Pieces.Min(x => x.RowInSet);
         var yMax = group.Pieces.Max(x => x.RowInSet);
 
-        var set = GameState.Sets[group.Set];
+        var set = State.Sets[group.Set];
         var w = set.PieceWidth;
         var h = set.PieceHeight;
 
@@ -369,7 +392,7 @@ public class Game
                 (piece.RowInSet - yMin) * h + yOffset
             );
         }
-        
+
         group.Width = (xMax - xMin + 1) * w;
         group.Height = (yMax - yMin + 1) * h;
     }

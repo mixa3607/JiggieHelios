@@ -2,6 +2,7 @@
 
 public class GameState
 {
+    public bool HeartbeatRequested { get; set; }
     public long PointsQty { get; set; }
     public string? BackendVersion { get; set; }
     public ushort MeId { get; set; }

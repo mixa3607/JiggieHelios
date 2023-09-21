@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "JiggieHelios.Cli": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
