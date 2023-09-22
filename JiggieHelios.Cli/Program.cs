@@ -22,7 +22,7 @@ internal class Program
         //args = "capture -i DFwRiv -o ./jcaps/ --wait --post-delay 0:00:30".Split(" ");
         //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-10.44.41.jcap -o -".Split(" ");
         //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-11.26.39.jcap".Split(" ");
-        args = "jcap2video -i ./jcaps/DFwRiv_2023.09.21-01.49.56.jcap -t 1 --frames-per-job 1000".Split(" ");
+        args = "jcap2video -i ./jcaps/sCe7vy_2023.09.21-08.09.56.jcap -t 3 --canvas-fill #5f9ea0".Split(" ");
 
         var hostAppBuilder = CreateHost();
         var host = hostAppBuilder.Build();

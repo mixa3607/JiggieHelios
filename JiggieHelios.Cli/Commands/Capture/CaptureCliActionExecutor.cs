@@ -38,12 +38,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
         await using var capStream = GetCapFileStream(args);
         var cap = new WsCapture(capStream);
         var wsClient = ActivatorUtilities.CreateInstance<JiggieWsClient>(_serviceProvider, new JiggieWsClientOptions());
-         = new JiggieWsClient(
-            _serviceProvider.GetRequiredService<ILogger<JiggieWsClient>>(),
-            _serviceProvider.GetRequiredService<JiggieProtocolTranslator>(),
-            new JiggieWsClientOptions()
-        )
-        { WsCapture = cap };
+        wsClient.WsCapture = cap;
 
         var game = new Game();
         var groupsCount = 0;

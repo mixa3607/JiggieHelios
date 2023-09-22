@@ -23,8 +23,4 @@
 		<ProjectReference Include="..\JiggieHelios\JiggieHelios.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="St\V2\" />
-	</ItemGroup>
-
 </Project>

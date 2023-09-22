@@ -1,11 +1,8 @@
-﻿using JiggieHelios.Capture.St;
-using JiggieHelios.Capture.St.V2;
+﻿using JiggieHelios.Capture.St.V2;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Cli.Commands.Capture;
-using JiggieHelios.Ws.Resp;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
-using System.Net.WebSockets;
 using Microsoft.Extensions.DependencyInjection;
 using FFMpegCore;
 
@@ -26,30 +23,55 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
     {
         var framesPerSegment = args.FramesPerJob;
         var segments = 0;
+        List<RenderSetV2> imageSets;
         {
-            var totalFrames = 0;
-            var firstStage = new ReplayRenderFirstStage(_serviceProvider.GetRequiredService<ILogger<ReplayRenderFirstStage>>(),
-               );
-            totalFrames = replayRender.GetTotalFrames();
-            segments = totalFrames / framesPerSegment;
-            if (segments * framesPerSegment < totalFrames)
-                segments++;
+            var firstStage = ActivatorUtilities.CreateInstance<ReplayRenderFirstStage>(_serviceProvider,
+                new ReplayRenderFirstStageOptions()
+                {
+                    JcapFile = args.JcapFile,
+                    Fps = args.Fps,
+                    SpeedupX = args.Fps
+                });
+            var totalFrames = firstStage.CalculateTotalFrames();
+            segments = (totalFrames + framesPerSegment - 1) / framesPerSegment;
             _logger.LogInformation("Calculated {fr} frames split to {j} jobs", totalFrames, segments);
+
+            firstStage.LoadImageSets();
+            imageSets = firstStage.PuzzleSets.ToList();
         }
 
-        var jobDefs = Enumerable.Range(0, segments).Select(x => new
+        var jobDefs = Enumerable.Range(0, segments + 2).Select(x => new
         {
             Segment = x,
             File = Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
                 $".{Path.GetFileNameWithoutExtension(args.JcapFile)}_{x}.mp4")
         }).ToArray();
 
+        var ch = 0;
+        var cw = 0;
+        {
+            var p = args.CanvasSize.Split('x', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (p.Length == 1)
+            {
+                ch = int.Parse(p[0]);
+            }
+            else if (p.Length == 2)
+            {
+                ch = int.Parse(p[0]);
+                cw = int.Parse(p[1]);
+            }
+        }
         await Parallel.ForEachAsync(jobDefs, new ParallelOptions()
         {
-            MaxDegreeOfParallelism = args.Threads
+            MaxDegreeOfParallelism = args.Threads,
+            CancellationToken = ct,
         }, (i, token) =>
         {
-            var replayRender = new ReplayRenderSecondStage(_serviceProvider.GetRequiredService<ILogger<ReplayRenderSecondStage>>(),
+            var render = new RenderV2();
+            render.Sets.AddRange(imageSets);
+            render.FillColor = SKColor.Parse(args.CanvasFill);
+
+            var replayRender = ActivatorUtilities.CreateInstance<ReplayRenderSecondStage>(_serviceProvider,
                 new ReplayRenderV2Options()
                 {
                     JcapFile = args.JcapFile,
@@ -57,9 +79,15 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
                     Fps = args.Fps,
                     SpeedupX = args.SpeedMultiplier,
                     FramesInSegment = framesPerSegment,
-                    Segment = i.Segment
-                });
-            return new ValueTask(replayRender.RenderAsync());
+                    Segment = i.Segment,
+                    CustomInputArgs = args.FfmpegInArgs,
+                    CustomOutputArgs = args.FfmpegOutArgs,
+                    TargetCanvasHeight = ch,
+                    TargetCanvasWidth = cw,
+                },
+                render
+            );
+            return new ValueTask(replayRender.RenderAsync(token));
         });
 
         _logger.LogInformation("Concating all segments to file");
@@ -72,62 +100,5 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
         {
             File.Delete(file);
         }
-    }
-
-    public async Task ExecuteAsync2(Jcap2VideoCliArgs args, CancellationToken interruptCt = default)
-    {
-        var render = new RenderV2();
-        var setBitmap = SKBitmap.Decode("./jcaps/uuUXZf_8f66e60e6fb9c09b514076106f7ba861.jpeg");
-        var setCanvas = new SKCanvas(setBitmap);
-
-        var imageInfo = new SKImageInfo(1000, 1000);
-        var surface = SKSurface.Create(imageInfo);
-        var canvas = surface.Canvas;
-        canvas.Clear(new SKColor(255, 0, 0));
-
-        SKRect dest = new SKRect(0, 0, 120, 160);
-        SKRect source = SKRect.Create(120, 160, 120, 160);
-
-        using (var image = surface.Snapshot())
-        using (var data = image.Encode(SKEncodedImageFormat.Png, 80))
-        using (var stream = File.OpenWrite(Path.Combine("./jcaps/", "1.png")))
-        {
-            data.SaveTo(stream);
-        }
-
-        canvas.DrawBitmap(setBitmap, source, dest);
-
-
-        using (var image = surface.Snapshot())
-        using (var data = image.Encode(SKEncodedImageFormat.Png, 80))
-        using (var stream = File.OpenWrite(Path.Combine("./jcaps/", "2.png")))
-        {
-            data.SaveTo(stream);
-        }
-    }
-
-    public async Task ExecuteAsync3(Jcap2VideoCliArgs args, CancellationToken ct = default)
-    {
-        var rep = new WsReplay(args.JcapFile);
-        var proto = new JiggieProtocolTranslator();
-        var game = new Game();
-        foreach (var command in rep.GetEnumerator())
-        {
-            if (command.FromServer)
-            {
-                IJiggieResponse a = command.MessageType switch
-                {
-                    WebSocketMessageType.Binary => proto.DecodeBinaryResponse(command.BinaryData!),
-                    WebSocketMessageType.Text => proto.DecodeJsonResponse(command.TextData!),
-                };
-                game.Apply(a);
-            }
-        }
-
-        var render = new RenderV2();
-        render.LoadFromGameState(game.State, "./jcaps");
-        render.SaveToFile("./jcaps/1.png");
-        render.DrawState(game.State);
-        render.SaveToFile("./jcaps/2.png");
     }
 }

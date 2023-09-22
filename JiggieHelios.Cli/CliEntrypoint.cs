@@ -1,5 +1,4 @@
-﻿using System.Reactive.Linq;
-using JiggieHelios.Cli.CliTools;
+﻿using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Cli.Commands.Capture;
 using JiggieHelios.Cli.Commands.Jcap2Json;
 using JiggieHelios.Cli.Commands.Jcap2Video;

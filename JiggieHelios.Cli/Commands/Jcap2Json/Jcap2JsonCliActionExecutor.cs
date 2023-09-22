@@ -1,7 +1,6 @@
 ﻿using System.Net.WebSockets;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Cli.Commands.Capture;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -11,12 +10,12 @@ namespace JiggieHelios.Cli.Commands.Jcap2Json;
 public class Jcap2JsonCliActionExecutor : ICliActionExecutor<Jcap2JsonCliArgs>
 {
     private readonly ILogger<CaptureCliActionExecutor> _logger;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly JiggieProtocolTranslator _protocolTranslator;
 
-    public Jcap2JsonCliActionExecutor(ILogger<CaptureCliActionExecutor> logger, IServiceProvider serviceProvider)
+    public Jcap2JsonCliActionExecutor(ILogger<CaptureCliActionExecutor> logger, JiggieProtocolTranslator protocolTranslator)
     {
         _logger = logger;
-        _serviceProvider = serviceProvider;
+        _protocolTranslator = protocolTranslator;
     }
 
     public async Task ExecuteAsync(Jcap2JsonCliArgs args, CancellationToken interruptCt = default)
@@ -44,8 +43,7 @@ public class Jcap2JsonCliActionExecutor : ICliActionExecutor<Jcap2JsonCliArgs>
         });
         await jsonWriter.WriteStartArrayAsync(interruptCt);
 
-
-        var translator = _serviceProvider.GetRequiredService<JiggieProtocolTranslator>();
+        
         foreach (var command in replay.GetEnumerator())
         {
             if (interruptCt.IsCancellationRequested)
@@ -56,12 +54,12 @@ public class Jcap2JsonCliActionExecutor : ICliActionExecutor<Jcap2JsonCliArgs>
             if (command.MessageType == WebSocketMessageType.Binary)
             {
                 await jsonWriter.WritePropertyNameAsync("binary", CancellationToken.None);
-                serializer.Serialize(jsonWriter, translator.DecodeBinaryResponse(command.BinaryData!));
+                serializer.Serialize(jsonWriter, _protocolTranslator.DecodeBinaryResponse(command.BinaryData!));
             }
             else if (command.MessageType == WebSocketMessageType.Text)
             {
                 await jsonWriter.WritePropertyNameAsync("json", CancellationToken.None);
-                serializer.Serialize(jsonWriter, translator.DecodeJsonResponse(command.TextData!));
+                serializer.Serialize(jsonWriter, _protocolTranslator.DecodeJsonResponse(command.TextData!));
             }
 
             await jsonWriter.WriteEndObjectAsync(CancellationToken.None);

@@ -284,8 +284,8 @@ public class Game
                 Width = roomSet.Width,
                 //PieceWidth = (float)Math.Round(roomSet.Width / roomSet.Cols),
                 //PieceHeight = (float)Math.Round(roomSet.Height / roomSet.Rows),
-                PieceWidth = roomSet.Width / roomSet.Cols,
-                PieceHeight = roomSet.Height / roomSet.Rows,
+                PieceWidth = roomSet.ImageWidth / roomSet.Cols,
+                PieceHeight = roomSet.ImageHeight / roomSet.Rows,
             };
             State.Sets.Add(set);
 
