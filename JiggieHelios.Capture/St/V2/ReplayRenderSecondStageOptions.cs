@@ -1,6 +1,6 @@
 ﻿namespace JiggieHelios.Capture.St.V2;
 
-public class ReplayRenderV2Options
+public class ReplayRenderSecondStageOptions
 {
     public int Segment { get; set; }
     public int FramesInSegment { get; set; }

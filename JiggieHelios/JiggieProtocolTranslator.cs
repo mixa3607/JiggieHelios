@@ -131,9 +131,23 @@ public class JiggieProtocolTranslator
     public IJiggieJsonResponse DecodeJsonResponse(string text)
     {
         var jsonObj = JObject.Parse(text);
+        var error = jsonObj["error"];
+        if (error != null && error.Type != JTokenType.Null)
+        {
+            throw new JiggieResponseException(error.ToString());
+        }
         var msgName = jsonObj["type"]!.Value<string>()!;
         return _jsonRespMap.TryGetValue(msgName, out var action)
             ? action(jsonObj)
             : _jsonRespMap[JiggieJsonResponse.UnknownResponseType](jsonObj);
+    }
+}
+
+public class JiggieResponseException : Exception
+{
+    public string RawError { get; }
+    public JiggieResponseException(string message): base(message)
+    {
+        RawError = message;
     }
 }

@@ -1,4 +1,6 @@
-﻿public class WsReplay: IDisposable
+﻿namespace JiggieHelios.Capture;
+
+public class WsReplay: IDisposable
 {
     private readonly FileStream _stream;
     private readonly BinaryReader _reader;

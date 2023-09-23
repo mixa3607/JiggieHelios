@@ -10,12 +10,12 @@ public class ReplayRenderSecondStage
     private readonly WsReplay _replay;
     private readonly RenderV2 _render;
     private readonly ILogger<ReplayRenderSecondStage> _logger;
-    private readonly ReplayRenderV2Options _options;
+    private readonly ReplayRenderSecondStageOptions _options;
     private readonly JiggieProtocolTranslator _jiggieProtocolTranslator;
 
     public string OutputFile => _options.OutFile;
 
-    public ReplayRenderSecondStage(ILogger<ReplayRenderSecondStage> logger, ReplayRenderV2Options options,
+    public ReplayRenderSecondStage(ILogger<ReplayRenderSecondStage> logger, ReplayRenderSecondStageOptions options,
         JiggieProtocolTranslator jiggieProtocolTranslator, RenderV2 render)
     {
         _logger = logger;
@@ -42,37 +42,35 @@ public class ReplayRenderSecondStage
 
     public IEnumerable<IVideoFrame> GetFrames()
     {
-        var beginDraw = false;
-
-        var frameTime = 1000 / _options.Fps * _options.SpeedupX;
+        var frameTime = 1000 * _options.SpeedupX / _options.Fps;
         var frameStart = DateTimeOffset.MinValue;
         var frameIdx = 0;
         var game = new Game();
 
-        while (_replay.Available() || beginDraw)
+        var roomLoaded = false;
+
+        while (_replay.Available())
         {
-            DateTimeOffset commandTime;
-            WsCapturedCommand? cap;
+            var cap = _replay.Read()!;
+            game.Apply(cap, _jiggieProtocolTranslator);
 
-            if (_replay.Available())
+            if (!roomLoaded && game.State.RoomInfo is { BoardHeight: > 0, BoardWidth: > 0 })
             {
-                cap = _replay.Read()!;
-                commandTime = cap.DateTime;
-            }
-            else
-            {
-                cap = null;
-                commandTime = DateTimeOffset.MinValue;
+                frameStart = cap.DateTime;
+                roomLoaded = true;
+                _render.LoadCanvasFromGameState(game.State, _options.TargetCanvasWidth, _options.TargetCanvasHeight);
+                _logger.LogInformation("Canvas with size {x}x{y} (scale {scale}) created",
+                    _render.ImageInfo.Width, _render.ImageInfo.Height, _render.Scale);
             }
 
-            while (beginDraw && commandTime > frameStart.AddMilliseconds(frameTime))
+            while (roomLoaded && cap.DateTime > frameStart.AddMilliseconds(frameTime))
             {
                 var segmentId = frameIdx / _options.FramesInSegment;
                 if (segmentId == _options.Segment)
                 {
                     _logger.LogInformation("Process frame {idx}, time: {t}, segment {seg}",
                         frameIdx,
-                        TimeSpan.FromMilliseconds(frameIdx * frameTime),
+                        frameStart,
                         _options.Segment);
 
                     _render.DrawStateFromGameState(game.State);
@@ -86,25 +84,6 @@ public class ReplayRenderSecondStage
 
                 frameIdx++;
                 frameStart = frameStart.AddMilliseconds(frameTime);
-            }
-
-
-            if (cap == null)
-            {
-                beginDraw = false;
-            }
-            else
-            {
-                game.Apply(cap, _jiggieProtocolTranslator);
-            }
-
-            if (!beginDraw && cap != null && game.State.RoomInfo is { BoardHeight: > 0, BoardWidth: > 0 })
-            {
-                frameStart = cap!.DateTime;
-                beginDraw = true;
-                _render.LoadCanvasFromGameState(game.State, _options.TargetCanvasWidth, _options.TargetCanvasHeight);
-                _logger.LogInformation("Canvas with size {x}x{y} (scale {scale}) created",
-                    _render.ImageInfo.Width, _render.ImageInfo.Height, _render.Scale);
             }
         }
     }

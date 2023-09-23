@@ -34,11 +34,10 @@ public class JiggieWsClient
 
         _ws = new WebsocketClient(_options.WsUri, Factory);
         _ws.ReconnectTimeout = TimeSpan.FromSeconds(60);
-
         MessageReceived = new Subject<IJiggieResponse>();
         RawMessageReceived = new Subject<ResponseMessage>();
-        _ws.MessageReceived.Select(DecodeResponse).Subscribe(MessageReceived.OnNext, MessageReceived.OnCompleted);
-        _ws.MessageReceived.Subscribe(RawMessageReceived.OnNext, RawMessageReceived.OnCompleted);
+        _ws.MessageReceived.Select(DecodeResponse).Subscribe(MessageReceived.OnNext, MessageReceived.OnError, MessageReceived.OnCompleted);
+        _ws.MessageReceived.Subscribe(RawMessageReceived.OnNext, RawMessageReceived.OnError, RawMessageReceived.OnCompleted);
 
         DisconnectionHappened = _ws.DisconnectionHappened;
         ReconnectionHappened = _ws.ReconnectionHappened;
@@ -109,7 +108,7 @@ public class JiggieWsClient
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, "Get error on receive");
             throw;
         }
     }

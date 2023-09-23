@@ -57,7 +57,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
             if (s.Sets.Count > 0 && args.DownloadImages && imgDownloadTask == null)
             {
                 imgDownloadTask = DownloadImagesAsync(args.OutDirectory, args.RoomId,
-                    s.Sets.Select(x => x.Image).ToArray(), interruptCt);
+                    s.Sets.Select(x => x.Image).ToArray(), puzzleFinishedCt);
             }
 
             if (s.Groups.Count != groupsCount)
@@ -82,9 +82,20 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
                 completedAt = DateTimeOffset.Now;
                 puzzleFinishedCts.Cancel();
             }
-        }, interruptCt);
-
-
+        }, ex=>
+        {
+            if (ex is JiggieResponseException { RawError: "No such room" })
+            {
+                _logger.LogError(ex, "Room not exist. Exit");
+                completedAt = DateTimeOffset.Now;
+                puzzleFinishedCts.Cancel();
+            }
+            else
+            {
+                _logger.LogError(ex, "Unknown error handled");
+            }
+        }, puzzleFinishedCt);
+        
         wsClient.ReconnectionHappened.Subscribe(x => wsClient.Send(userMessage));
         await wsClient.StartAsync();
         wsClient.Send(userMessage);
@@ -94,6 +105,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
         {
             if (interruptCt.IsCancellationRequested)
             {
+                puzzleFinishedCts.Cancel();
                 _logger.LogInformation("Exit requested. Finishing...");
                 break;
             }
@@ -104,7 +116,8 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
                 if (args.PostCompleteDelay != null)
                 {
                     if (completeLogFlag)
-                        _logger.LogInformation("Puzzle completed waiting post complete delay {delay}", args.PostCompleteDelay);
+                        _logger.LogInformation("Puzzle completed waiting post complete delay {delay}",
+                            args.PostCompleteDelay);
 
                     if (completedAt + args.PostCompleteDelay.Value < now)
                     {
@@ -134,7 +147,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
             {
                 try
                 {
-                    await Task.Delay(1000, cts.Token);//todo rework
+                    await Task.Delay(1000, cts.Token); //todo rework
                 }
                 catch (Exception e)
                 {
@@ -150,7 +163,8 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
         }
     }
 
-    private async Task DownloadImagesAsync(string outDir, string roomId, string[] imgNames, CancellationToken ct = default)
+    private async Task DownloadImagesAsync(string outDir, string roomId, string[] imgNames,
+        CancellationToken ct = default)
     {
         foreach (var imgName in imgNames)
         {

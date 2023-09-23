@@ -1,4 +1,5 @@
 ﻿using System.Net.WebSockets;
+using JiggieHelios.Capture;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Cli.Commands.Capture;
 using Microsoft.Extensions.Logging;

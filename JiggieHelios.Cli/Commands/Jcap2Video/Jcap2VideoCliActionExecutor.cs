@@ -30,7 +30,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
                 {
                     JcapFile = args.JcapFile,
                     Fps = args.Fps,
-                    SpeedupX = args.Fps
+                    SpeedupX = args.SpeedMultiplier
                 });
             var totalFrames = firstStage.CalculateTotalFrames();
             segments = (totalFrames + framesPerSegment - 1) / framesPerSegment;
@@ -40,7 +40,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
             imageSets = firstStage.PuzzleSets.ToList();
         }
 
-        var jobDefs = Enumerable.Range(0, segments + 2).Select(x => new
+        var jobDefs = Enumerable.Range(0, segments).Select(x => new
         {
             Segment = x,
             File = Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
@@ -72,7 +72,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
             render.FillColor = SKColor.Parse(args.CanvasFill);
 
             var replayRender = ActivatorUtilities.CreateInstance<ReplayRenderSecondStage>(_serviceProvider,
-                new ReplayRenderV2Options()
+                new ReplayRenderSecondStageOptions()
                 {
                     JcapFile = args.JcapFile,
                     OutFile = i.File,

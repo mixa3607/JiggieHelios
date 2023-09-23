@@ -16,6 +16,7 @@ using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
 using FFMpegCore;
+using JiggieHelios.Capture;
 using JiggieHelios.Capture.St.V1;
 
 Log.Logger = new LoggerConfiguration()
