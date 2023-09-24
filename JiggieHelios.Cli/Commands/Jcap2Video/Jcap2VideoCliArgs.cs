@@ -7,8 +7,14 @@ public class Jcap2VideoCliArgs
     [ArgShortcut("-i"), ArgRequired, ArgDescription("Jcap file")]
     public required string JcapFile { get; set; }
 
+    [ArgShortcut("-o"), ArgDescription("output file")]
+    public string? OutFile { get; set; }
+
     [ArgShortcut("-t"), ArgDefaultValue(5)]
     public int Threads { get; set; } = 5;
+
+    [ArgShortcut("--img-dir")]
+    public string? ImagesDirectory { get; set; }
 
     [ArgShortcut("--frames-per-job"), ArgDefaultValue(300)]
     public int FramesPerJob { get; set; } = 300;
@@ -16,8 +22,11 @@ public class Jcap2VideoCliArgs
     [ArgShortcut("--fps"), ArgDefaultValue(30)]
     public int Fps { get; set; } = 30;
 
-    [ArgShortcut("--speedx"), ArgDefaultValue(20)]
-    public int SpeedMultiplier { get; set; } = 20;
+    [ArgShortcut("--speedx")]
+    public int SpeedMultiplier { get; set; } = 0;
+
+    [ArgShortcut("--target-dur"), ArgDescription("Dynamically calculate speedx. If set speedx will be ignored")]
+    public TimeSpan? TargetDuration { get; set; }
 
     [ArgShortcut("--canvas-size"), ArgDefaultValue("1920x0")]
     public string CanvasSize { get; set; } = "1920x0";

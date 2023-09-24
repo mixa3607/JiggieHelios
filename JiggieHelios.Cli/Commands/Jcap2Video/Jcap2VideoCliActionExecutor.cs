@@ -10,10 +10,10 @@ namespace JiggieHelios.Cli.Commands.Jcap2Video;
 
 public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
 {
-    private readonly ILogger<CaptureCliActionExecutor> _logger;
+    private readonly ILogger<Jcap2VideoCliActionExecutor> _logger;
     private readonly IServiceProvider _serviceProvider;
 
-    public Jcap2VideoCliActionExecutor(ILogger<CaptureCliActionExecutor> logger, IServiceProvider serviceProvider)
+    public Jcap2VideoCliActionExecutor(ILogger<Jcap2VideoCliActionExecutor> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -25,12 +25,15 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
         var segments = 0;
         List<RenderSetV2> imageSets;
         {
+            var imagesDirectory = args.ImagesDirectory ?? Path.GetDirectoryName(args.JcapFile)!;
             var firstStage = ActivatorUtilities.CreateInstance<ReplayRenderFirstStage>(_serviceProvider,
                 new ReplayRenderFirstStageOptions()
                 {
                     JcapFile = args.JcapFile,
                     Fps = args.Fps,
-                    SpeedupX = args.SpeedMultiplier
+                    SpeedupX = args.SpeedMultiplier,
+                    Threads = args.Threads,
+                    ImagesDirectory = imagesDirectory,
                 });
             var totalFrames = firstStage.CalculateTotalFrames();
             segments = (totalFrames + framesPerSegment - 1) / framesPerSegment;
@@ -44,7 +47,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
         {
             Segment = x,
             File = Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
-                $".{Path.GetFileNameWithoutExtension(args.JcapFile)}_{x}.mp4")
+                $".{Path.GetFileNameWithoutExtension(args.JcapFile)}_{x}_{Random.Shared.Next(0, int.MaxValue)}.mp4")
         }).ToArray();
 
         var ch = 0;
@@ -67,7 +70,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
             CancellationToken = ct,
         }, (i, token) =>
         {
-            var render = new RenderV2();
+            var render = new SkiaSharpRender();
             render.Sets.AddRange(imageSets);
             render.FillColor = SKColor.Parse(args.CanvasFill);
 
@@ -91,8 +94,8 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
         });
 
         _logger.LogInformation("Concating all segments to file");
-        var outFile = Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
-            $"{Path.GetFileNameWithoutExtension(args.JcapFile)}.mp4");
+        var outFile = args.OutFile ?? Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
+            $"{Path.GetFileNameWithoutExtension(args.JcapFile)}_{args.SpeedMultiplier}x.mp4");
         FFMpeg.Join(outFile, jobDefs.Select(x => x.File).ToArray());
 
         _logger.LogInformation("Removing temp files");

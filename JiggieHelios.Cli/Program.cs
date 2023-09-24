@@ -19,16 +19,21 @@ internal class Program
 
     static int Main(string[] args)
     {
-        args = "capture -i DFwRi1 -o ./jcaps/ --wait --post-delay 0:00:30".Split(" ");
-        //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-10.44.41.jcap -o -".Split(" ");
-        //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-11.26.39.jcap".Split(" ");
-        //args = "jcap2video -i ./jcaps/sCe7vy_2023.09.21-08.09.56.jcap -t 3 --canvas-fill #5f9ea0".Split(" ");
-
         var hostAppBuilder = CreateHost();
         var host = hostAppBuilder.Build();
         InitLogger(host.Services);
         AddCancelKeyHandler(host.Services);
         GlobalFFOptions.Configure(host.Services.GetRequiredService<IOptions<FFOptions>>().Value);
+
+        if (args.Length == 0 && hostAppBuilder.Environment.IsDevelopment())
+        {
+            _logger.LogWarning("Rewrite args!");
+            //args = "capture -i DFwRi1 -o ./jcaps/ --wait --post-delay 0:00:30".Split(" ");
+            //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-10.44.41.jcap -o -".Split(" ");
+            //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-11.26.39.jcap".Split(" ");
+            args = "jcap2video -i ./jcaps/yzzaN1.jcap -t 10 --canvas-fill #5f9ea0".Split(" ");
+        }
+
 
         Args.RegisterFactory(typeof(CliEntrypoint), () => host.Services.GetRequiredService<CliEntrypoint>());
         try

@@ -1,13 +1,10 @@
-﻿using System.Collections;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Serilog.Events;
 using Serilog;
 using JiggieHelios.Ws;
 using System.Net;
 using System.Net.WebSockets;
-using System.Numerics;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using JiggieHelios.Ws.Req;
 using JiggieHelios;
 using JiggieHelios.Capture.St;
@@ -17,7 +14,6 @@ using JiggieHelios.Ws.Resp;
 using JiggieHelios.Ws.Resp.Cmd;
 using FFMpegCore;
 using JiggieHelios.Capture;
-using JiggieHelios.Capture.St.V1;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -43,7 +39,7 @@ GlobalFFOptions.Configure(new FFOptions
 //var vids = Directory.GetFiles("./files", "out*.mp4").OrderBy(x => x).ToArray();
 //FFMpeg.Join("./files/combined.mp4", vids);
 //return;
-
+/*i
 var totalSegments = new ReplayRenderV1(factory.CreateLogger<ReplayRenderV1>(), 0, 0).GetTotalFrames();
 var framesPerSegment = 100;
 var segments = totalSegments / framesPerSegment;
@@ -68,7 +64,7 @@ return;
 //}
 var game = new Game();
 
-/*if (false)
+f (false)
 {
     var subj = new Subject<ImageWrapper>();
     GlobalFFOptions.Configure(new FFOptions
@@ -201,7 +197,7 @@ var game = new Game();
 
 
     return;
-}*/
+}
 
 if (false)
 {
@@ -397,7 +393,7 @@ wsClient
                     Task.Delay(20).Wait();
                 }
             }
-        }*/
+        }
     });
 
 wsClient.MessageReceived.Subscribe(x =>
@@ -421,4 +417,4 @@ wsClient.ReconnectionHappened.Subscribe(x => wsClient.Send(userMessage));
 while (true)
 {
     await Task.Delay(TimeSpan.FromHours(10));
-}
+}*/

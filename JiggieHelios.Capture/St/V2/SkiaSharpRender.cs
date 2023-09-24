@@ -1,9 +1,10 @@
-﻿using System.Numerics;
+﻿using System.Drawing;
+using System.Numerics;
 using SkiaSharp;
 
 namespace JiggieHelios.Capture.St.V2;
 
-public class RenderV2
+public class SkiaSharpRender
 {
     public int Scale { get; set; } = 1;
     public SKImageInfo ImageInfo { get; set; }
@@ -13,7 +14,7 @@ public class RenderV2
 
     public List<RenderSetV2> Sets { get; set; } = new();
 
-    public void LoadImageSetsFromGameState(GameState state, string imagesDir)
+    public void LoadImageSetsFromGameState(GameState state, string imagesDir, int thread = 1)
     {
         Sets.Clear();
         foreach (var set in state.Sets)
@@ -23,13 +24,21 @@ public class RenderV2
             var bitmap = SKBitmap.Decode(codec, imageInfo);
             //var canvas = new SKCanvas(bitmap);
             var renderSet = new RenderSetV2() { Bitmap = null, Canvas = null };
-
-            foreach (var piece in set.Pieces)
+            renderSet.Pieces.EnsureCapacity(set.Pieces.Count);
+            
+            var tmp = Enumerable.Range(0, set.Pieces.Count).Select(_ => (RenderSetPieceV2?)null).ToArray();
+            Parallel.For(0, set.Pieces.Count, new ParallelOptions()
             {
-                var x = (int)(piece.ColumnInSet * set.PieceWidth);
-                var y = (int)(piece.RowInSet * set.PieceHeight);
-                var crop = new Rectangle(x, y, (int)Math.Ceiling(set.PieceWidth),
-                    (int)Math.Ceiling(set.PieceHeight));
+                MaxDegreeOfParallelism = thread
+            }, (i) =>
+            {
+                var piece = set.Pieces[i];
+                var crop = new Rectangle(
+                    (int)(piece.ColumnInSet * set.PieceWidth),
+                    (int)(piece.RowInSet * set.PieceHeight),
+                    (int)Math.Ceiling(set.PieceWidth),
+                    (int)Math.Ceiling(set.PieceHeight)
+                );
 
                 if (crop.X + crop.Width > imageInfo.Width)
                     crop.X = imageInfo.Width - crop.Width;
@@ -40,12 +49,9 @@ public class RenderV2
                 var pieceImg = new SKBitmap(pieceImgInf);
                 var pieceCanvas = new SKCanvas(pieceImg);
                 pieceCanvas.DrawBitmap(bitmap, -crop.X, -crop.Y);
-                renderSet.Pieces.Add(new RenderSetPieceV2()
-                {
-                    Image = pieceImg
-                });
-            }
-
+                tmp[i] = new RenderSetPieceV2() { Image = pieceImg };
+            });
+            renderSet.Pieces.AddRange((RenderSetPieceV2[])tmp);
             Sets.Add(renderSet);
         }
     }
@@ -79,23 +85,6 @@ public class RenderV2
     public void DrawStateFromGameState(GameState state)
     {
         Canvas!.Clear(FillColor);
-        //if (state.Groups.Count > 10)
-        //{
-        //    return;
-        //}
-        //
-        //var i3 = 0;
-        //foreach (var piece in state.Sets[1].Pieces)
-        //{
-        //    var pos = piece.Origin;
-        //    Canvas.DrawBitmap(Sets[1].Pieces[i3].Image, pos.X, pos.Y);
-        //    i3++;
-        //}
-        //
-        //SaveToFile($"./jcaps/aaaa.png");
-        //return;
-
-        //var i = 0;
         foreach (var group in state.Groups)
         {
             var renderSet = Sets[group.Set];
@@ -103,27 +92,15 @@ public class RenderV2
             Canvas.Scale(1f / Scale);
             Canvas.Translate(group.Coordinates.X, group.Coordinates.Y);
             Canvas.RotateDegrees(90 * (int)group.Rotation);
-
-            Canvas.Scale((float)gameSet.Width / (float)gameSet.ImageWidth);
-
-            ;
-            //var i2 = 0;
+            Canvas.Scale((float)gameSet.Width / gameSet.ImageWidth);
+            
             foreach (var piece in group.Pieces)
             {
-                //i2++;
-                //if (i2 % 2 == 0)
-                //{
-                //    continue;
-                //}
-
                 var pos = piece.OffsetInGroup - new Vector2(gameSet.PieceWidth / 2, gameSet.PieceHeight / 2);
                 Canvas.DrawBitmap(renderSet.Pieces[piece.IndexInSet].Image, pos.X, pos.Y);
             }
 
             Canvas.ResetMatrix();
-
-            //SaveToFile($"./jcaps/{i}.png");
-            //i++;
         }
 
         Canvas.Flush();

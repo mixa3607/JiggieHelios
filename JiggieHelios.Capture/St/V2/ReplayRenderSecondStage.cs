@@ -8,7 +8,7 @@ namespace JiggieHelios.Capture.St.V2;
 public class ReplayRenderSecondStage
 {
     private readonly WsReplay _replay;
-    private readonly RenderV2 _render;
+    private readonly SkiaSharpRender _render;
     private readonly ILogger<ReplayRenderSecondStage> _logger;
     private readonly ReplayRenderSecondStageOptions _options;
     private readonly JiggieProtocolTranslator _jiggieProtocolTranslator;
@@ -16,7 +16,7 @@ public class ReplayRenderSecondStage
     public string OutputFile => _options.OutFile;
 
     public ReplayRenderSecondStage(ILogger<ReplayRenderSecondStage> logger, ReplayRenderSecondStageOptions options,
-        JiggieProtocolTranslator jiggieProtocolTranslator, RenderV2 render)
+        JiggieProtocolTranslator jiggieProtocolTranslator, SkiaSharpRender render)
     {
         _logger = logger;
         _options = options;
