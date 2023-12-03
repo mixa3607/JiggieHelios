@@ -1,0 +1,45 @@
+name: push
+
+on:
+  push:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target_os: [ "linux-x64", "win-x64" ]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.x 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.nuget/packages
+        key: ${{runner.os}}-nuget
+    - name: env vars
+      env:
+        GIT_REF: ${{ github.ref_name }}
+        GIT_REF_TYPE: ${{ github.ref_type }}
+        GIT_COMMIT_SHA: ${{ github.sha }}
+        PROJECT_URL: ${{ github.server_url }}/${{ github.repository }}
+        REPO_URL: ${{ github.repositoryUrl }}
+        TARGET_OS: ${{ matrix.target_os }}
+      run: |
+        echo "TARGET_OS=${TARGET_OS}"           >> ${GITHUB_ENV}
+        echo "GIT_REF=${GIT_REF}"               >> ${GITHUB_ENV}
+        echo "GIT_REF_TYPE=${GIT_REF_TYPE}"     >> ${GITHUB_ENV}
+        echo "GIT_COMMIT_SHA=${GIT_COMMIT_SHA}" >> ${GITHUB_ENV}
+        echo "PROJECT_URL=${PROJECT_URL}"       >> ${GITHUB_ENV}
+        echo "REPO_URL=${REPO_URL}"             >> ${GITHUB_ENV}
+    - name: Pack
+      run: cd ./src/JiggieHelios.Cli && dotnet publish -c Release -r $TARGET_OS -o ./out -p:SingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+    - name: Dist
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.target_os}}_prebuild
+        path: ./src/JiggieHelios.Cli/out
