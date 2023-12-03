@@ -22,6 +22,7 @@ Releases in [Releases](../../releases)
 # HowTo
 ## Basic usage
 Capture puzzle solving to ./jcaps directory and wait 30s after finish then convert to video with duration 1:30
+Result sample see at [samples/ee8nLJ](samples/ee8nLJ) 
 ```
 ./JiggieHelios.Cli capture -i ee8nLJ --post-delay 00:00:30 -o ./jcaps
 ./JiggieHelios.Cli jcap2video --target-dur 00:01:30 -i ./jcaps/ee8nLJ_2023.12.02-12.36.39.jcap
