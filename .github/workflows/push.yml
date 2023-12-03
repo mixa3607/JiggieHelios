@@ -37,7 +37,7 @@ jobs:
         echo "PROJECT_URL=${PROJECT_URL}"       >> ${GITHUB_ENV}
         echo "REPO_URL=${REPO_URL}"             >> ${GITHUB_ENV}
     - name: Pack
-      run: cd ./src/JiggieHelios.Cli && dotnet publish -c Release -r $TARGET_OS -o ./out -p:SingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      run: cd ./src/JiggieHelios.Cli && dotnet publish -c Release -r $TARGET_OS -o ./out -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
     - name: Dist
       uses: actions/upload-artifact@v2
       with:
