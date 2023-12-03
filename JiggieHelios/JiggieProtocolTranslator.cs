@@ -98,7 +98,7 @@ public class JiggieProtocolTranslator
             .ToDictionary(
                 k => k!.JsonType,
                 v => (Func<JObject, IJiggieJsonResponse>)((json) =>
-                    (IJiggieJsonResponse)v!.Method.Invoke(null, new object?[] { json })!)
+                    (IJiggieJsonResponse)v!.Method!.Invoke(null, new object?[] { json })!)
             );
     }
 

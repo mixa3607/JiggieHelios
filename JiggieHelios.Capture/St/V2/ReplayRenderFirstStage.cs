@@ -1,9 +1,4 @@
-﻿using System.Net.WebSockets;
-using FFMpegCore.Extensions.SkiaSharp;
-using FFMpegCore.Pipes;
-using JiggieHelios.Ws.Resp;
-using JiggieHelios.Ws.Resp.Cmd;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace JiggieHelios.Capture.St.V2;
 
@@ -41,62 +36,6 @@ public class ReplayRenderFirstStage
             }
         }
     }
-    public int CalculateTotalFrames()
-    {
-        var proto = new JiggieProtocolTranslator();
-        var beginDraw = false;
-
-        var replay = new WsReplay(_options.JcapFile);
-
-        var frameTime = 1000 * _options.SpeedupX / _options.Fps;
-        var frameStart = DateTimeOffset.MinValue;
-        var frameIdx = 0;
-
-        while (replay.Available() || beginDraw)
-        {
-            DateTimeOffset commandTime;
-            WsCapturedCommand? cap;
-
-            if (replay.Available())
-            {
-                cap = replay.Read()!;
-                commandTime = cap.DateTime;
-            }
-            else
-            {
-                cap = null;
-                commandTime = DateTimeOffset.MinValue;
-            }
-
-            while (beginDraw && commandTime > frameStart.AddMilliseconds(frameTime))
-            {
-                frameIdx++;
-                frameStart = frameStart.AddMilliseconds(frameTime);
-            }
-
-
-            if (cap == null)
-            {
-                beginDraw = false;
-            }
-
-            if (cap != null && cap.FromServer)
-            {
-                IJiggieResponse a = cap.MessageType switch
-                {
-                    WebSocketMessageType.Binary => proto.DecodeBinaryResponse(cap.BinaryData!),
-                    WebSocketMessageType.Text => proto.DecodeJsonResponse(cap.TextData!),
-                };
-                if (a is RoomJsonResponse)
-                {
-                    beginDraw = true;
-                    frameStart = cap.DateTime;
-                }
-            }
-        }
-
-        return frameIdx;
-    }
 
     public CalculatedVideoStats CalculateVideoStats()
     {
@@ -128,8 +67,9 @@ public class ReplayRenderFirstStage
         var diffMs = diff.TotalMilliseconds;
         if (_options.TargetDuration != null)
         {
+            _logger.LogInformation("Target duration used for calculate speedup instead itself");
             var targetMs = _options.TargetDuration.Value.TotalMilliseconds;
-            if (targetMs < diffMs)
+            if (targetMs > diffMs)
                 throw new Exception(
                     $"Target duration must be greatest than real ({_options.TargetDuration} >= {diff})");
             result.SpeedupX = (int)(diffMs / targetMs);
@@ -139,32 +79,14 @@ public class ReplayRenderFirstStage
             result.SpeedupX = _options.SpeedupX;
         }
 
+        if (result.SpeedupX == 0)
+            throw new Exception("Speedup multiplier is 0. Must be >=1");
+
         result.OutDuration = diff / result.SpeedupX;
         result.FrameTime = TimeSpan.FromMilliseconds(1000d * result.SpeedupX / _options.Fps);
         result.FramesCount = (int)(diff / result.FrameTime);
 
         return result;
-    }
-    public int CalculateTotalFrames1()
-    {
-        var replay = new WsReplay(_options.JcapFile);
-
-        var frameTime = 1000 * _options.SpeedupX / _options.Fps;
-        var start = DateTimeOffset.MinValue;
-        var stop = DateTimeOffset.MinValue;
-
-        foreach (var cap in replay.GetEnumerator())
-        {
-            if (cap is { FromServer: true, MessageType: WebSocketMessageType.Text } && start == DateTimeOffset.MinValue)
-            {
-                if (_protoTranslator.DecodeJsonResponse(cap.TextData!) is RoomJsonResponse)
-                    start = cap.DateTime;
-            }
-
-            stop = cap.DateTime;
-        }
-
-        return (int)((stop - start).TotalMilliseconds / frameTime);
     }
 }
 

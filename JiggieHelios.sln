@@ -5,11 +5,9 @@ VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JiggieHelios", "JiggieHelios\JiggieHelios.csproj", "{0758EFBD-46C7-4612-8564-1CC44BBD11D9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JiggieHelios.SourceGenerators", "JiggieHelios.SourceGenerators\JiggieHelios.SourceGenerators.csproj", "{50201949-19B8-44C0-B677-7ECE9EF26C16}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JiggieHelios.Capture", "JiggieHelios.Capture\JiggieHelios.Capture.csproj", "{33AD5C53-FE32-4A5D-B643-166D74D04FFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JiggieHelios.Cli", "JiggieHelios.Cli\JiggieHelios.Cli.csproj", "{DEC92FF4-CE17-412E-9F9A-9C7D37614EEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JiggieHelios.Cli", "JiggieHelios.Cli\JiggieHelios.Cli.csproj", "{DEC92FF4-CE17-412E-9F9A-9C7D37614EEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +19,6 @@ Global
 		{0758EFBD-46C7-4612-8564-1CC44BBD11D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0758EFBD-46C7-4612-8564-1CC44BBD11D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0758EFBD-46C7-4612-8564-1CC44BBD11D9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{50201949-19B8-44C0-B677-7ECE9EF26C16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{50201949-19B8-44C0-B677-7ECE9EF26C16}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{50201949-19B8-44C0-B677-7ECE9EF26C16}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{50201949-19B8-44C0-B677-7ECE9EF26C16}.Release|Any CPU.Build.0 = Release|Any CPU
 		{33AD5C53-FE32-4A5D-B643-166D74D04FFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{33AD5C53-FE32-4A5D-B643-166D74D04FFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33AD5C53-FE32-4A5D-B643-166D74D04FFF}.Release|Any CPU.ActiveCfg = Release|Any CPU

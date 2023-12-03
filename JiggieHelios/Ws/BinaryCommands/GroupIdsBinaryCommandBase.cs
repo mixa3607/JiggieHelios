@@ -3,7 +3,7 @@
 public abstract class GroupIdsBinaryCommandBase
 {
     public ushort UserId { get; set; }
-    public IReadOnlyList<ushort> GroupIds { get; set; }
+    public IReadOnlyList<ushort> GroupIds { get; set; } = Array.Empty<ushort>();
 
     public static T Decode<T>(BinaryReader reader) where T: GroupIdsBinaryCommandBase, IJiggieBinaryObject, new()
     {

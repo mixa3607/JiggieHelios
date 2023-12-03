@@ -46,6 +46,7 @@ public class ReplayRenderSecondStage
         var frameStart = DateTimeOffset.MinValue;
         var frameIdx = 0;
         var game = new Game();
+        var logProgressEachNFrames = _options.FramesInSegment / 20;
 
         var roomLoaded = false;
 
@@ -68,10 +69,8 @@ public class ReplayRenderSecondStage
                 var segmentId = frameIdx / _options.FramesInSegment;
                 if (segmentId == _options.Segment)
                 {
-                    _logger.LogInformation("Process frame {idx}, time: {t}, segment {seg}",
-                        frameIdx,
-                        frameStart,
-                        _options.Segment);
+                    _logger.LogTrace("Process frame {idx}, time: {t}, segment {seg}",
+                        frameIdx, frameStart, _options.Segment);
 
                     _render.DrawStateFromGameState(game.State);
                     yield return new BitmapVideoFrameWrapper(_render.Bitmap!);
@@ -80,6 +79,12 @@ public class ReplayRenderSecondStage
                 {
                     _logger.LogInformation("Segment {seg} done", _options.Segment);
                     yield break;
+                }
+
+                if (frameIdx % logProgressEachNFrames == 0)
+                {
+                    _logger.LogDebug("Process frame {idx}, time: {t}, segment {seg}",
+                        frameIdx, frameStart, _options.Segment);
                 }
 
                 frameIdx++;

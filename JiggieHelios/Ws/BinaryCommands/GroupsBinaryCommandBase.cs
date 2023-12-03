@@ -3,7 +3,7 @@
 public class GroupsBinaryCommandBase
 {
     public ushort UserId { get; set; }
-    public IReadOnlyList<Group> Groups { get; set; }
+    public IReadOnlyList<Group> Groups { get; set; } = Array.Empty<Group>();
 
     public static T Decode<T>(BinaryReader reader) where T: GroupsBinaryCommandBase, new()
     {

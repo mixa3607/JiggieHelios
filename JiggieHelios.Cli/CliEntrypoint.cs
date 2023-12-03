@@ -1,4 +1,5 @@
 ﻿using JiggieHelios.Cli.CliTools;
+using JiggieHelios.Cli.Commands.Bot;
 using JiggieHelios.Cli.Commands.Capture;
 using JiggieHelios.Cli.Commands.Jcap2Json;
 using JiggieHelios.Cli.Commands.Jcap2Video;
@@ -46,6 +47,13 @@ public class CliEntrypoint
     public async Task Jcap2Video(Jcap2VideoCliArgs args)
     {
         var executor = _serviceProvider.GetRequiredService<ICliActionExecutor<Jcap2VideoCliArgs>>();
+        await executor.ExecuteAsync(args, _ct);
+    }
+
+    [ArgActionMethod]
+    public async Task Bot(BotCliArgs args)
+    {
+        var executor = _serviceProvider.GetRequiredService<ICliActionExecutor<BotCliArgs>>();
         await executor.ExecuteAsync(args, _ct);
     }
 }

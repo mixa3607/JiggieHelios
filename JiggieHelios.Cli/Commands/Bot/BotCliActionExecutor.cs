@@ -1,79 +1,112 @@
-﻿using Flurl;
-using Flurl.Http;
+﻿using System.Text.RegularExpressions;
 using JiggieHelios.Capture.St;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Ws;
 using JiggieHelios.Ws.Binary.Cmd;
 using JiggieHelios.Ws.Req;
+using JiggieHelios.Ws.Resp.Cmd;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace JiggieHelios.Cli.Commands.Capture;
+namespace JiggieHelios.Cli.Commands.Bot;
 
-public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
+public class BotCliActionExecutor : ICliActionExecutor<BotCliArgs>
 {
-    private readonly ILogger<CaptureCliActionExecutor> _logger;
+    private readonly ILogger<BotCliActionExecutor> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly BotState _state = new BotState();
+    private readonly Game _game = new Game();
 
-    public CaptureCliActionExecutor(ILogger<CaptureCliActionExecutor> logger, IServiceProvider serviceProvider)
+    public BotCliActionExecutor(ILogger<BotCliActionExecutor> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
     }
 
-    public async Task ExecuteAsync(CaptureCliArgs args, CancellationToken interruptCt = default)
+    public async Task ExecuteAsync(BotCliArgs args, CancellationToken interruptCt = default)
     {
         var puzzleCompletedCts = new CancellationTokenSource();
         var puzzleCompletedCt = puzzleCompletedCts.Token;
         var connectionCompletedCts = new CancellationTokenSource();
         var connectionCompletedCt = connectionCompletedCts.Token;
-        //var cts = CancellationTokenSource.CreateLinkedTokenSource(interruptCt, puzzleFinishedCt);
+
+        _state.LoadStateFromFile(args.StateFile);
+        _state.SaveStateToFile(args.StateFile);
 
         var userMessage = new JiggieJsonRequest.UserMsg()
         {
             Color = args.UserColor,
             Name = args.UserLogin,
             Room = args.RoomId,
-            Secret = null,
+            Secret = args.Secret,
         };
 
-        await using var capStream = GetCapFileStream(args);
-        var cap = new WsCapture(capStream);
         var wsClient = ActivatorUtilities.CreateInstance<JiggieWsClient>(_serviceProvider, new JiggieWsClientOptions());
-        wsClient.WsCapture = cap;
 
-        var game = new Game();
-        var groupsCount = 0;
         var completedAt = DateTimeOffset.MaxValue;
-        Task? imgDownloadTask = null;
+        var prevUsers = Array.Empty<string>();
+        var bannedIds = new List<uint>();
         wsClient.MessageReceived.Subscribe(resp =>
         {
-            game.Apply(resp);
-            var s = game.State;
+            _game.Apply(resp);
+            var s = _game.State;
 
-            if (cap.CommandsCount % 100 == 0)
+            if (resp is UsersJsonResponse usersResp)
             {
-                _logger.LogDebug("Captured {count} commands", cap.CommandsCount);
+                var newUsers = usersResp.Users.Select(x => x.Name).ToArray();
+                var add = newUsers.Where(x => !prevUsers.Contains(x)).ToArray();
+                var del = prevUsers.Where(x => !newUsers.Contains(x)).ToArray();
+
+                if (prevUsers.Length > 0)
+                {
+                    _logger.LogInformation("Users list updated. Connected: {add}, disconnected: {del}", add, del);
+                    //wsClient.Send(new JiggieJsonRequest.ChatMsg()
+                    //{
+                    //    Message =
+                    //        $"/whisper {args.Admin}; C: {string.Join(", ", add)} D: {string.Join(", ", del)}"
+                    //});
+                }
+
+                var bannedNames = add
+                    .Where(x => _state.BannedNamesRegexps.Any(r => r.IsMatch(x)))
+                    .ToArray();
+                foreach (var user in bannedNames
+                             .Select(n => usersResp.Users.FirstOrDefault(x => x.Name == n))
+                             .Where(x => x != null && !bannedIds.Contains(x.Id)))
+                {
+                    _logger.LogInformation("Ban {banned}({id}) user", user!.Name, user!.Id);
+                    wsClient.Send(new JiggieJsonRequest.ChatMsg()
+                    {
+                        Message = $"/whisper {args.Admin};Ban {user.Name}({user.Id}) user"
+                    });
+
+                    wsClient.Send(new JiggieJsonRequest.KickMsg()
+                    {
+                        Secret = args.Secret,
+                        User = user.Id,
+                    });
+                    bannedIds.Add(user!.Id);
+                }
+
+                prevUsers = newUsers;
             }
-
-            if (s.Sets.Count > 0 && args.DownloadImages && imgDownloadTask == null)
+            else if (resp is ChatJsonResponse chatResp)
             {
-                imgDownloadTask = DownloadImagesAsync(args.OutDirectory, args.RoomId,
-                    s.Sets.Select(x => x.Image).ToArray(), interruptCt);
-            }
-
-            if (s.Groups.Count != groupsCount)
-            {
-                var n = s.Groups.Count;
-                _logger.LogInformation("Groups {f} => {t}", groupsCount, n);
-                groupsCount = n;
+                var msg = chatResp.Message?.Trim() ?? "";
+                var isAdmin = chatResp.Name == args.Admin || chatResp.Name == "(whisper) " + args.Admin;
+                if (msg.StartsWith("$ban ") && isAdmin)
+                {
+                    var regexStr = msg["$ban ".Length..].Trim();
+                    _state.BannedNamesRegexps.Add(new Regex(regexStr));
+                    _state.SaveStateToFile(args.StateFile);
+                }
             }
 
             if (s.HeartbeatRequested)
             {
                 _logger.LogDebug("Heartbeat");
                 wsClient.Send(new HeartbeatBinaryCommand() { UserId = s.MeId });
-                game.ResetHeartbeatFlag();
+                _game.ResetHeartbeatFlag();
             }
 
             if (completedAt == DateTimeOffset.MaxValue && s.Sets.Count > 0 && s.Groups.Count == s.Sets.Count)
@@ -81,7 +114,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
                 completedAt = DateTimeOffset.Now;
                 _logger.LogInformation("Puzzle completed at {at}", completedAt);
                 if (args.PostCompleteDelay != null)
-                    _logger.LogInformation("Wait {delay} before finish capturing", args.PostCompleteDelay);
+                    _logger.LogInformation("Wait {delay} before finish bot", args.PostCompleteDelay);
                 puzzleCompletedCts.Cancel();
             }
         }, ex =>
@@ -139,6 +172,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
                     break;
                 }
             }
+
             try
             {
                 await Task.Delay(100, interruptCt);
@@ -151,59 +185,5 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
 
         _logger.LogInformation("Stop ws");
         await wsClient.StopAsync();
-        if (imgDownloadTask != null)
-        {
-            await imgDownloadTask;
-        }
-    }
-
-    private async Task DownloadImagesAsync(string outDir, string roomId, string[] imgNames,
-        CancellationToken ct = default)
-    {
-        foreach (var imgName in imgNames)
-        {
-            await DownloadImageAsync(outDir, roomId, imgName, ct);
-        }
-    }
-
-    private async Task DownloadImageAsync(string outDir, string roomId, string imgName, CancellationToken ct = default)
-    {
-        var maxAttempts = 5;
-        var attempt = 1;
-        while (maxAttempts >= attempt && !ct.IsCancellationRequested)
-        {
-            try
-            {
-                var bytes = await "https://jiggie.fun/assets/pictures/".AppendPathSegment(imgName).GetBytesAsync(ct);
-                var path = Path.Combine(outDir, imgName);
-                await File.WriteAllBytesAsync(path, bytes, CancellationToken.None);
-                _logger.LogInformation("Image {img} downloaded to {dest}", imgName, path);
-                break;
-            }
-            catch (TaskCanceledException e) when (ct.IsCancellationRequested)
-            {
-                _logger.LogWarning(e, "Cancellation requested");
-                break;
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(e, "Cant download image {img}. Attempt {curr}/{max}",
-                    imgName, attempt, maxAttempts);
-                attempt++;
-            }
-        }
-    }
-
-    private Stream GetCapFileStream(CaptureCliArgs args)
-    {
-        var now = DateTimeOffset.Now;
-        var filePath = Path.Combine(args.OutDirectory, $"{args.RoomId}_{now:yyyy.MM.dd-hh.mm.ss}.jcap");
-        if (!Directory.Exists(args.OutDirectory))
-        {
-            _logger.LogWarning("Directory {dir} not exist. Creating", args.OutDirectory);
-            Directory.CreateDirectory(args.OutDirectory);
-        }
-
-        return File.OpenWrite(filePath);
     }
 }

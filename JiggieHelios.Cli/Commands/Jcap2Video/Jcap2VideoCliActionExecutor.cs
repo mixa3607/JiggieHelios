@@ -1,6 +1,5 @@
 ﻿using JiggieHelios.Capture.St.V2;
 using JiggieHelios.Cli.CliTools;
-using JiggieHelios.Cli.Commands.Capture;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,8 +20,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
 
     public async Task ExecuteAsync(Jcap2VideoCliArgs args, CancellationToken ct = default)
     {
-        var framesPerSegment = args.FramesPerJob;
-        var segments = 0;
+        CalculatedVideoStats videoStats;
         List<RenderSetV2> imageSets;
         {
             var imagesDirectory = args.ImagesDirectory ?? Path.GetDirectoryName(args.JcapFile)!;
@@ -34,14 +32,19 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
                     SpeedupX = args.SpeedMultiplier,
                     Threads = args.Threads,
                     ImagesDirectory = imagesDirectory,
+                    TargetDuration = args.TargetDuration,
                 });
-            var totalFrames = firstStage.CalculateTotalFrames();
-            segments = (totalFrames + framesPerSegment - 1) / framesPerSegment;
-            _logger.LogInformation("Calculated {fr} frames split to {j} jobs", totalFrames, segments);
+            videoStats = firstStage.CalculateVideoStats();
+            _logger.LogInformation("Video result: fps={fps}, speedup={speedup}, duration={duration}",
+                videoStats.Fps, videoStats.SpeedupX, videoStats.OutDuration);
 
             firstStage.LoadImageSets();
             imageSets = firstStage.PuzzleSets.ToList();
         }
+
+        var framesPerSegment = args.FramesPerJob;
+        var segments = (videoStats.FramesCount + framesPerSegment - 1) / framesPerSegment;
+        _logger.LogInformation("Calculated {fr} frames split to {j} jobs", videoStats.FramesCount, segments);
 
         var jobDefs = Enumerable.Range(0, segments).Select(x => new
         {
@@ -79,8 +82,8 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
                 {
                     JcapFile = args.JcapFile,
                     OutFile = i.File,
-                    Fps = args.Fps,
-                    SpeedupX = args.SpeedMultiplier,
+                    Fps = videoStats.Fps,
+                    SpeedupX = videoStats.SpeedupX,
                     FramesInSegment = framesPerSegment,
                     Segment = i.Segment,
                     CustomInputArgs = args.FfmpegInArgs,
@@ -95,7 +98,7 @@ public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
 
         _logger.LogInformation("Concating all segments to file");
         var outFile = args.OutFile ?? Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
-            $"{Path.GetFileNameWithoutExtension(args.JcapFile)}_{args.SpeedMultiplier}x.mp4");
+            $"{Path.GetFileNameWithoutExtension(args.JcapFile)}_{videoStats.SpeedupX}x.mp4");
         FFMpeg.Join(outFile, jobDefs.Select(x => x.File).ToArray());
 
         _logger.LogInformation("Removing temp files");

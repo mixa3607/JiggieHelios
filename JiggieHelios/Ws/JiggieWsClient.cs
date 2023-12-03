@@ -7,7 +7,6 @@ using JiggieHelios.Ws.Req;
 using JiggieHelios.Ws.Resp;
 using Microsoft.Extensions.Logging;
 using Websocket.Client;
-using Websocket.Client.Models;
 
 namespace JiggieHelios.Ws;
 
@@ -32,12 +31,14 @@ public class JiggieWsClient
         _protocolTranslator = protocolTranslator;
         _options = options;
 
-        _ws = new WebsocketClient(_options.WsUri, Factory);
+        _ws = new WebsocketClient(_options.WsUri, null, Factory);
         _ws.ReconnectTimeout = TimeSpan.FromSeconds(60);
         MessageReceived = new Subject<IJiggieResponse>();
         RawMessageReceived = new Subject<ResponseMessage>();
-        _ws.MessageReceived.Select(DecodeResponse).Subscribe(MessageReceived.OnNext, MessageReceived.OnError, MessageReceived.OnCompleted);
-        _ws.MessageReceived.Subscribe(RawMessageReceived.OnNext, RawMessageReceived.OnError, RawMessageReceived.OnCompleted);
+        _ws.MessageReceived.Select(DecodeResponse).Subscribe(MessageReceived.OnNext, MessageReceived.OnError,
+            MessageReceived.OnCompleted);
+        _ws.MessageReceived.Subscribe(RawMessageReceived.OnNext, RawMessageReceived.OnError,
+            RawMessageReceived.OnCompleted);
 
         DisconnectionHappened = _ws.DisconnectionHappened;
         ReconnectionHappened = _ws.ReconnectionHappened;

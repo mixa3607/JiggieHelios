@@ -14,7 +14,7 @@ public class SkiaSharpRender
 
     public List<RenderSetV2> Sets { get; set; } = new();
 
-    public void LoadImageSetsFromGameState(GameState state, string imagesDir, int thread = 1)
+    public void LoadImageSetsFromGameState(GameState state, string imagesDir, int threads = 1)
     {
         Sets.Clear();
         foreach (var set in state.Sets)
@@ -22,14 +22,13 @@ public class SkiaSharpRender
             var codec = SKCodec.Create(Path.Combine(imagesDir, set.Image));
             var imageInfo = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888);
             var bitmap = SKBitmap.Decode(codec, imageInfo);
-            //var canvas = new SKCanvas(bitmap);
             var renderSet = new RenderSetV2() { Bitmap = null, Canvas = null };
             renderSet.Pieces.EnsureCapacity(set.Pieces.Count);
-            
-            var tmp = Enumerable.Range(0, set.Pieces.Count).Select(_ => (RenderSetPieceV2?)null).ToArray();
+
+            var tmp = new RenderSetPieceV2?[set.Pieces.Count];
             Parallel.For(0, set.Pieces.Count, new ParallelOptions()
             {
-                MaxDegreeOfParallelism = thread
+                MaxDegreeOfParallelism = threads
             }, (i) =>
             {
                 var piece = set.Pieces[i];
@@ -51,7 +50,7 @@ public class SkiaSharpRender
                 pieceCanvas.DrawBitmap(bitmap, -crop.X, -crop.Y);
                 tmp[i] = new RenderSetPieceV2() { Image = pieceImg };
             });
-            renderSet.Pieces.AddRange((RenderSetPieceV2[])tmp);
+            renderSet.Pieces.AddRange(tmp!);
             Sets.Add(renderSet);
         }
     }

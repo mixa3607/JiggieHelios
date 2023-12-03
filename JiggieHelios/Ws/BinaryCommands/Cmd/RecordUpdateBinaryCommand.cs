@@ -36,6 +36,6 @@ public class RecordUpdateBinaryCommand : IJiggieBinaryObject
     public class JukeRecord
     {
         public ushort Id { get; set; }
-        public IReadOnlyList<ushort> Pos { get; set; }
+        public IReadOnlyList<ushort> Pos { get; set; } = Array.Empty<ushort>();
     }
 }
