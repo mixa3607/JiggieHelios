@@ -2,6 +2,8 @@ name: push
 
 on:
   push:
+    paths:
+    - src/**
 
 jobs:
   publish:
