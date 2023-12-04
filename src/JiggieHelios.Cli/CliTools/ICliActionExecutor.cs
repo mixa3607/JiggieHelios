@@ -4,7 +4,7 @@ public interface ICliActionExecutor
 {
     Type ArgType { get; }
 }
-public interface ICliActionExecutor<T>
+public interface ICliActionExecutor<T>: ICliActionExecutor
 {
     Task ExecuteAsync(T args, CancellationToken ct = default);
 }
