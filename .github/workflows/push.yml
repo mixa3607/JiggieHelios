@@ -42,8 +42,8 @@ jobs:
       run: |
         if [ $GIT_REF_TYPE == tag ]; then
           pushd external-deps
-          ./chrome.sh
-          ./ffmpeg.sh
+          ./chrome.sh $TARGET_OS
+          ./ffmpeg.sh $TARGET_OS
           ./puppeteer-stream.sh
           ./reaggie-frontend.sh
           popd
@@ -57,7 +57,7 @@ jobs:
       run: |
         if [ $GIT_REF_TYPE == tag ]; then
           pushd ./external-deps
-          ./copy2output.sh "$TARGET_OS" "./src/JiggieHelios.Cli/out/files"
+          ./copy2output.sh "$TARGET_OS" "../src/JiggieHelios.Cli/out/files"
           popd
         fi
     - name: Dist
