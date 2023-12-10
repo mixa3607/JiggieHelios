@@ -6,13 +6,13 @@ DST="$2" # ../src/out/files
 
 if [ "$RID" == "linux-x64" ]; then
   mkdir -p $DST/chrome
-  cp -r ./chrome/linux-120.0.6099.71 $DST/chrome
+  cp -r ./chrome/linux-120.0.6099.71/chrome-linux64/. $DST/chrome
 
   mkdir -p $DST/ffmpeg
   cp $(find ffmpeg/linux64 -type f -name ffmpeg) $DST/ffmpeg
 elif [ "$RID" == "win-x64" ]; then
   mkdir -p $DST/chrome
-  cp -r ./chrome/win64-120.0.6099.71 $DST/chrome
+  cp -r ./chrome/win64-120.0.6099.71/chrome-win64/. $DST/chrome
 
   mkdir -p $DST/ffmpeg
   cp $(find ffmpeg/win64 -type f -name ffmpeg.exe) $DST/ffmpeg
