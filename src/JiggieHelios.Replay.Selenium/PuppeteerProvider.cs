@@ -15,13 +15,14 @@ public class PuppeteerProvider
             : await Puppeteer.LaunchAsync(new LaunchOptions()
             {
                 Browser = SupportedBrowser.Chrome,
-                ExecutablePath = options.ChromeBin,
+                ExecutablePath = Path.GetFullPath(options.ChromeBin),
                 Headless = false,
+                DefaultViewport = null,
                 Args = options.ChromeArgs
                     .Append(
                         $"--window-size={options.Width + options.WidthOffset},{options.Height + options.HeightOffset}")
-                    .Append($"--load-extension={options.RecordingExtensionDir}")
-                    .Append($"--disable-extensions-except={options.RecordingExtensionDir}")
+                    .Append($"--load-extension={Path.GetFullPath(options.RecordingExtensionDir)}")
+                    .Append($"--disable-extensions-except={Path.GetFullPath(options.RecordingExtensionDir)}")
                     .Append($"--allowlisted-extension-id={options.RecordingExtensionId}")
                     .ToArray()
             });

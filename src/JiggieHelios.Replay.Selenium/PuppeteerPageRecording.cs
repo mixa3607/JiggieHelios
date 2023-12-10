@@ -32,6 +32,12 @@ public class PuppeteerPageRecording
         _page = extension;
     }
 
+    public async Task<(int w, int h)> GetViewSizeAsync()
+    {
+        var resp = await _page!.EvaluateFunctionAsync<int[]>("()=>[window.window.innerWidth, window.innerHeight]");
+        return (resp[0], resp[1]);
+    }
+
     public async Task StartRecordingAsync(GetStreamOptions opts)
     {
         opts.BaseUrl ??= $"ws://localhost:{_hostingOptions.ListenPort}/record/";

@@ -25,7 +25,7 @@ public class RoomHtmlController : ControllerBase
             return;
 
         var template =
-            await System.IO.File.ReadAllTextAsync(Path.Combine(_hostingOptions.TemplatesDir, "index.html.mustache"));
+            await System.IO.File.ReadAllTextAsync(Path.Combine(Path.GetFullPath(_hostingOptions.TemplatesDir), "index.html.mustache"));
         var stubble = await new StubbleBuilder().Build().RenderAsync(template, new
         {
             name = "replay",

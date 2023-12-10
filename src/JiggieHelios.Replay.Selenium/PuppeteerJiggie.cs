@@ -34,6 +34,12 @@ public class PuppeteerJiggie
         await _page!.GoToAsync($"http://localhost:{_hostingOptions.ListenPort}/", WaitUntilNavigation.DOMContentLoaded);
     }
 
+    public async Task<(int w, int h)> GetViewSizeAsync()
+    {
+        var resp = await _page!.EvaluateFunctionAsync<int[]>("()=>[window.window.innerWidth, window.innerHeight]");
+        return (resp[0], resp[1]);
+    }
+
     public async Task SetStorageAsync(Dictionary<string, object>? additional = null)
     {
         if (_jiggieOptions.ClearLocalStorage)

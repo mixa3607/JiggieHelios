@@ -24,14 +24,21 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\JiggieHelios.Replay.Skia\JiggieHelios.Replay.Skia.csproj" />
-	  <ProjectReference Include="..\JiggieHelios.Replay.Selenium\JiggieHelios.Replay.Selenium.csproj" />
+		<ProjectReference Include="..\JiggieHelios.Replay.Skia\JiggieHelios.Replay.Skia.csproj" />
+		<ProjectReference Include="..\JiggieHelios.Replay.Selenium\JiggieHelios.Replay.Selenium.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="appsettings*.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="appsettings*.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="files/**/*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="files\" />
 	</ItemGroup>
 
 </Project>

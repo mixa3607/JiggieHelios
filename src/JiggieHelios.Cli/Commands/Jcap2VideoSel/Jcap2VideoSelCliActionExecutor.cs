@@ -49,7 +49,10 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
         builder.Services.Configure<SeleniumOptions>(builder.Configuration.GetSection("Jcap2VideoSel:Selenium"));
 
         builder.Services.AddControllers().AddApplicationPart(typeof(ReplayController).Assembly);
-        builder.Services.AddSpaStaticFiles(configuration => { configuration.RootPath = hostingOptions.StaticDir; });
+        builder.Services.AddSpaStaticFiles(configuration =>
+        {
+            configuration.RootPath = Path.GetFullPath(hostingOptions.StaticDir);
+        });
         var app = builder.Build();
 
         app.MapControllers();
@@ -138,6 +141,14 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
             var recorderExtension = ActivatorUtilities.CreateInstance<PuppeteerPageRecording>(services);
             await recorderExtension.InitAsync(browser);
 
+            var viewPortSizeActual = await recorderExtension.GetViewSizeAsync();
+            var viewPortSizeRequested = (replayOptions.TargetWidth, replayOptions.TargetHeight);
+            if (viewPortSizeActual != viewPortSizeRequested)
+            {
+                _logger.LogWarning("Viewport size not eq requested. See Offset parameters. {actual} != {requested}",
+                    viewPortSizeActual, viewPortSizeRequested);
+            }
+
             var jiggieSel = ActivatorUtilities.CreateInstance<PuppeteerJiggie>(services);
             await jiggieSel.InitAsync(await browser.NewPageAsync());
 
@@ -147,6 +158,7 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
                 { "viewScale", stats.Scale },
                 { "bg", args.CanvasFill }
             });
+
 
             await jiggieSel.OpenTargetRoomAsync();
             await jiggieSel.WaitFullInitAsync();
