@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace JiggieHelios.Ws.Resp.Cmd;
+namespace JiggieHelios.Ws.Responses.Cmd;
 
 public class RoomGroup
 {

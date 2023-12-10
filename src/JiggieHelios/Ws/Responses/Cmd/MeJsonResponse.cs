@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 
-namespace JiggieHelios.Ws.Resp.Cmd;
+namespace JiggieHelios.Ws.Responses.Cmd;
 
 [JiggieJsonResponseObject("me")]
 public class MeJsonResponse : IJiggieJsonResponse

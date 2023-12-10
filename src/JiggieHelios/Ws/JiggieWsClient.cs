@@ -2,9 +2,10 @@
 using System.Net.WebSockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using JiggieHelios.Ws.Binary;
-using JiggieHelios.Ws.Req;
-using JiggieHelios.Ws.Resp;
+using JiggieHelios.Capture;
+using JiggieHelios.Ws.BinaryCommands;
+using JiggieHelios.Ws.Requests;
+using JiggieHelios.Ws.Responses;
 using Microsoft.Extensions.Logging;
 using Websocket.Client;
 

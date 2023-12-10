@@ -1,28 +1,25 @@
-﻿using JiggieHelios.Cli.CliTools;
+﻿using FFMpegCore;
+using JiggieHelios.Cli.CliTools;
+using JiggieHelios.Replay.Skia;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
-using Microsoft.Extensions.DependencyInjection;
-using FFMpegCore;
-using JiggieHelios.Capture.Skia;
-using JiggieHelios.Cli.Commands.Capture;
-using Newtonsoft.Json;
-using PowerArgs;
 
-namespace JiggieHelios.Cli.Commands.Jcap2Video;
+namespace JiggieHelios.Cli.Commands.Jcap2VideoSkia;
 
-public class Jcap2VideoCliActionExecutor : ICliActionExecutor<Jcap2VideoCliArgs>
+public class Jcap2VideoSkiaCliActionExecutor : ICliActionExecutor<Jcap2VideoSkiaCliArgs>
 {
-    private readonly ILogger<Jcap2VideoCliActionExecutor> _logger;
+    private readonly ILogger<Jcap2VideoSkiaCliActionExecutor> _logger;
     private readonly IServiceProvider _serviceProvider;
-    public Type ArgType => typeof(Jcap2VideoCliArgs);
+    public Type ArgType => typeof(Jcap2VideoSkiaCliArgs);
 
-    public Jcap2VideoCliActionExecutor(ILogger<Jcap2VideoCliActionExecutor> logger, IServiceProvider serviceProvider)
+    public Jcap2VideoSkiaCliActionExecutor(ILogger<Jcap2VideoSkiaCliActionExecutor> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
     }
 
-    public async Task ExecuteAsync(Jcap2VideoCliArgs args, CancellationToken ct = default)
+    public async Task ExecuteAsync(Jcap2VideoSkiaCliArgs args, CancellationToken ct = default)
     {
         SkiaCalculatedVideoStats videoStats;
         List<SkiaRenderSet> imageSets;

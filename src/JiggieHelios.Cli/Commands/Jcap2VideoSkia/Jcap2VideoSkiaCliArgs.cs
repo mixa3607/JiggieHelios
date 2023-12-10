@@ -1,8 +1,8 @@
 ﻿using PowerArgs;
 
-namespace JiggieHelios.Cli.Commands.Jcap2Video;
+namespace JiggieHelios.Cli.Commands.Jcap2VideoSkia;
 
-public class Jcap2VideoCliArgs
+public class Jcap2VideoSkiaCliArgs
 {
     [ArgShortcut("-i"), ArgRequired, ArgDescription("Jcap file")]
     public required string JcapFile { get; set; }
@@ -37,6 +37,6 @@ public class Jcap2VideoCliArgs
     [ArgShortcut("--ffmpeg-in"), ArgDefaultValue("")]
     public string FfmpegInArgs { get; set; } = "";
 
-    [ArgShortcut("--ffmpeg-out"), ArgDefaultValue("-c:v libx264 -vf scale=1920:-2,format=yuv420p")]
-    public string FfmpegOutArgs { get; set; } = "-c:v libx264 -vf scale=1920:-2,format=yuv420p";
+    [ArgShortcut("--ffmpeg-out"), ArgDefaultValue("")]
+    public string FfmpegOutArgs { get; set; } = "";
 }

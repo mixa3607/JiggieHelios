@@ -1,4 +1,6 @@
-﻿namespace JiggieHelios.Capture;
+﻿using JiggieHelios.Capture;
+
+namespace JiggieHelios;
 
 public class WsReplay: IDisposable
 {

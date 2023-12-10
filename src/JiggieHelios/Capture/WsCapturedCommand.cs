@@ -1,6 +1,8 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
 
+namespace JiggieHelios.Capture;
+
 public class WsCapturedCommand
 {
     public DateTimeOffset DateTime { get; set; }

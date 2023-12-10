@@ -1,6 +1,6 @@
 ﻿using SkiaSharp;
 
-namespace JiggieHelios.Capture.Skia;
+namespace JiggieHelios.Replay.Skia;
 
 public class SkiaRenderSetPiece
 {

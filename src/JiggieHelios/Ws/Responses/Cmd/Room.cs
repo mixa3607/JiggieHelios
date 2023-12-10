@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Ws.Resp.Cmd;
+﻿namespace JiggieHelios.Ws.Responses.Cmd;
 
 public class Room
 {

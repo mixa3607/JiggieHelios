@@ -1,6 +1,6 @@
-﻿using JiggieHelios.Ws.Resp;
+﻿using JiggieHelios.Ws.Responses;
 
-namespace JiggieHelios.Ws.Binary;
+namespace JiggieHelios.Ws.BinaryCommands;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class JiggieBinaryObjectAttribute : Attribute

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace JiggieHelios.Ws.Req;
+namespace JiggieHelios.Ws.Requests;
 
 public static class JiggieJsonRequest
 {

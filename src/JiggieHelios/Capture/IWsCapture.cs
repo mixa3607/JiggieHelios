@@ -1,6 +1,6 @@
 ﻿using Websocket.Client;
 
-namespace JiggieHelios;
+namespace JiggieHelios.Capture;
 
 public interface IWsCapture
 {

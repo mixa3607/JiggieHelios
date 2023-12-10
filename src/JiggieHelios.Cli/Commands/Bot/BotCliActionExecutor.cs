@@ -1,10 +1,9 @@
 ﻿using System.Text.RegularExpressions;
-using JiggieHelios.Capture.St;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Ws;
-using JiggieHelios.Ws.Binary.Cmd;
-using JiggieHelios.Ws.Req;
-using JiggieHelios.Ws.Resp.Cmd;
+using JiggieHelios.Ws.BinaryCommands.Cmd;
+using JiggieHelios.Ws.Requests;
+using JiggieHelios.Ws.Responses.Cmd;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +14,7 @@ public class BotCliActionExecutor : ICliActionExecutor<BotCliArgs>
     private readonly ILogger<BotCliActionExecutor> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly BotState _state = new BotState();
-    private readonly Game _game = new Game();
+    private readonly Game.Game _game = new Game.Game();
 
     public Type ArgType => typeof(BotCliArgs);
 

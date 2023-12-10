@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Ws.Resp;
+﻿namespace JiggieHelios.Ws.Responses;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class JiggieJsonResponseObjectAttribute : Attribute

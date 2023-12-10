@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
-namespace JiggieHelios.Ws.Resp;
+namespace JiggieHelios.Ws.Responses;
 
 public static class JiggieJsonResponse
 {

@@ -1,7 +1,6 @@
-﻿using JiggieHelios.Capture.St;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
-namespace JiggieHelios.Capture.Skia;
+namespace JiggieHelios.Replay.Skia;
 
 public class SkiaReplayRenderFirstStage
 {
@@ -23,7 +22,7 @@ public class SkiaReplayRenderFirstStage
     public void LoadImageSets()
     {
         _logger.LogInformation("Loading sets from jcap {file}", _options.JcapFile);
-        var game = new Game();
+        var game = new Game.Game();
         var replay = new WsReplay(_options.JcapFile);
         foreach (var cap in replay.GetEnumerator())
         {
@@ -44,7 +43,7 @@ public class SkiaReplayRenderFirstStage
         result.Fps = _options.Fps;
 
         var replay = new WsReplay(_options.JcapFile);
-        var game = new Game();
+        var game = new Game.Game();
 
         var firstFrame = DateTimeOffset.MinValue;
         var lastFrame = DateTimeOffset.MaxValue;

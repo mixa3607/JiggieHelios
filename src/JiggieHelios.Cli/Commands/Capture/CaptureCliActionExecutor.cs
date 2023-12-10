@@ -1,10 +1,10 @@
 ﻿using Flurl;
 using Flurl.Http;
-using JiggieHelios.Capture.St;
+using JiggieHelios.Capture;
 using JiggieHelios.Cli.CliTools;
 using JiggieHelios.Ws;
-using JiggieHelios.Ws.Binary.Cmd;
-using JiggieHelios.Ws.Req;
+using JiggieHelios.Ws.BinaryCommands.Cmd;
+using JiggieHelios.Ws.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -43,7 +43,7 @@ public class CaptureCliActionExecutor : ICliActionExecutor<CaptureCliArgs>
         var wsClient = ActivatorUtilities.CreateInstance<JiggieWsClient>(_serviceProvider, new JiggieWsClientOptions());
         wsClient.WsCapture = cap;
 
-        var game = new Game();
+        var game = new Game.Game();
         var groupsCount = 0;
         var completedAt = DateTimeOffset.MaxValue;
         Task? imgDownloadTask = null;

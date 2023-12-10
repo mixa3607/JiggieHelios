@@ -1,10 +1,9 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Extensions.SkiaSharp;
 using FFMpegCore.Pipes;
-using JiggieHelios.Capture.St;
 using Microsoft.Extensions.Logging;
 
-namespace JiggieHelios.Capture.Skia;
+namespace JiggieHelios.Replay.Skia;
 
 public class SkiaReplayRenderSecondStage
 {
@@ -46,7 +45,7 @@ public class SkiaReplayRenderSecondStage
         var frameTime = 1000 * _options.SpeedupX / _options.Fps;
         var frameStart = DateTimeOffset.MinValue;
         var frameIdx = 0;
-        var game = new Game();
+        var game = new Game.Game();
         var logProgressEachNFrames = _options.FramesInSegment / 20;
 
         var roomLoaded = false;

@@ -2,7 +2,8 @@
 using JiggieHelios.Cli.Commands.Bot;
 using JiggieHelios.Cli.Commands.Capture;
 using JiggieHelios.Cli.Commands.Jcap2Json;
-using JiggieHelios.Cli.Commands.Jcap2Video;
+using JiggieHelios.Cli.Commands.Jcap2VideoSel;
+using JiggieHelios.Cli.Commands.Jcap2VideoSkia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PowerArgs;
@@ -36,8 +37,11 @@ public class CliEntrypoint
     [ArgActionMethod]
     public Task Jcap2Json(Jcap2JsonCliArgs args) => InvokeCliAction(args);
 
-    [ArgActionMethod]
-    public Task Jcap2Video(Jcap2VideoCliArgs args) => InvokeCliAction(args);
+    [ArgActionMethod, ArgShortcut("jcap2video.skia")]
+    public Task Jcap2VideoSkia(Jcap2VideoSkiaCliArgs args) => InvokeCliAction(args);
+
+    [ArgActionMethod, ArgShortcut("jcap2video.sel")]
+    public Task Jcap2VideoSel(Jcap2VideoSelCliArgs args) => InvokeCliAction(args);
 
     [ArgActionMethod]
     public Task Bot(BotCliArgs args) => InvokeCliAction(args);

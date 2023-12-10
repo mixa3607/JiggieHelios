@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Capture.St;
+﻿namespace JiggieHelios.Game;
 
 public class GameUser
 {

@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Ws.Resp;
+﻿namespace JiggieHelios.Ws.Responses;
 
 public interface IJiggieResponse
 {

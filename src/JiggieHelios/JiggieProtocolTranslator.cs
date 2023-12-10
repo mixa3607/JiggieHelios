@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
-using JiggieHelios.Ws.Binary;
-using JiggieHelios.Ws.Binary.Cmd;
-using JiggieHelios.Ws.Req;
-using JiggieHelios.Ws.Resp;
+using JiggieHelios.Ws.BinaryCommands;
+using JiggieHelios.Ws.BinaryCommands.Cmd;
+using JiggieHelios.Ws.Requests;
+using JiggieHelios.Ws.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;

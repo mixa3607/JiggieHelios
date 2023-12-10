@@ -32,10 +32,11 @@ internal class Program
             //args = "capture -i DFwRi1 -o ./jcaps/ --wait --post-delay 0:00:30".Split(" ");
             //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-10.44.41.jcap -o -".Split(" ");
             //args = "jcap2json -i ./jcaps/uuUXZf_2023.09.20-11.26.39.jcap".Split(" ");
-            args = "jcap2video -i ./jcaps/yzzaN1.jcap -t 10".Split(" ");
+            args = "jcap2video.skia -i ./jcaps/yzzaN1.jcap -t 10".Split(" ");
             args = "bot -s io1GdtDSPyPjbByrlO56 -i L_pawe -a DoDick".Split(" ");
-            args = "jcap2video --help".Split(" ");
+            args = "jcap2video.skia --help".Split(" ");
             args = "--help".Split(" ");
+            args = "jcap2video.sel -i ./jcaps/Ol2Hdf_2023.12.07-06.09.43.jcap --target-dur 0:01:30".Split(" ");
         }
 
         try
@@ -50,15 +51,18 @@ internal class Program
             //
             //foreach (var cliAction in cliActions)
             //{
+            //    var executeMethod = cliAction.ImplementationType!.GetMethods().First(x=>x.Name == "ExecuteAsync" && x.GetParameters().Length == 1);
             //    var actTypeName = cliAction.ImplementationType!.Name;
             //    var actName = actTypeName.EndsWith("CliActionExecutor")
             //        ? actTypeName[..^"CliActionExecutor".Length]
             //        : actTypeName;
             //
-            //    var commandLineAction = new CommandLineAction(arg =>
-            //    {
-            //        arg.
-            //    });
+            //    var type = typeof(CommandLineAction);
+            //    var method = type.GetMethod("Create", BindingFlags.Static|BindingFlags.NonPublic,
+            //        new[] { typeof(MethodInfo), typeof(List<string>) })!;
+            //    var result = method.Invoke(null, new object?[] { executeMethod, new List<string>() { actName } })!;
+            //
+            //    var commandLineAction = new CommandLineAction(arg => { });
             //    commandLineAction.Aliases.Add(actTypeName);
             //    commandLineAction.Arguments.AddRange(new CommandLineArgumentsDefinition(typeof(CaptureCliArgs))
             //        .Arguments);

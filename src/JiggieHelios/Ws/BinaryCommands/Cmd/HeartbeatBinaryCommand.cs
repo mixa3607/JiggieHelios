@@ -1,7 +1,7 @@
-﻿using JiggieHelios.Ws.Req;
-using JiggieHelios.Ws.Resp;
+﻿using JiggieHelios.Ws.Requests;
+using JiggieHelios.Ws.Responses;
 
-namespace JiggieHelios.Ws.Binary.Cmd;
+namespace JiggieHelios.Ws.BinaryCommands.Cmd;
 
 [JiggieBinaryObject(BinaryCommandType.HEARTBEAT)]
 public class HeartbeatBinaryCommand : IJiggieBinaryObject

@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace JiggieHelios.Capture.St;
+namespace JiggieHelios.Game;
 
 public class PieceGroup
 {

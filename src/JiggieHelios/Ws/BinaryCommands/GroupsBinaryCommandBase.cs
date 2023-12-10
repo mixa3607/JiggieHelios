@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Ws.Binary;
+﻿namespace JiggieHelios.Ws.BinaryCommands;
 
 public class GroupsBinaryCommandBase
 {

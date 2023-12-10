@@ -1,11 +1,11 @@
 ﻿using System.Net.WebSockets;
 using System.Numerics;
-using System.Xml.Linq;
-using JiggieHelios.Ws.Binary.Cmd;
-using JiggieHelios.Ws.Resp;
-using JiggieHelios.Ws.Resp.Cmd;
+using JiggieHelios.Capture;
+using JiggieHelios.Ws.BinaryCommands.Cmd;
+using JiggieHelios.Ws.Responses;
+using JiggieHelios.Ws.Responses.Cmd;
 
-namespace JiggieHelios.Capture.St;
+namespace JiggieHelios.Game;
 
 public class Game
 {

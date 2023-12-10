@@ -1,4 +1,4 @@
-﻿namespace JiggieHelios.Ws.Req;
+﻿namespace JiggieHelios.Ws.Requests;
 
 public interface IJiggieRequest
 {
