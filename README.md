@@ -9,23 +9,28 @@ ToolBox for https://jiggie.fun puzzles
 - Capture all traffic to jcap
 - Convert jcap to json
 - Render jcap to timelapse (ffmpeg+skiasharp)
+- Render jcap to timelapse (ffmpeg+selenium)
 - Bot (WIP)
 - Easily extensible codebase
 - Crossplatform
-- Ready2run (*if ffmpeg in path)
+- Ready2run (release contains all dependencies)
 
 # Download
-Latest build in [Actions](../../actions)
+Latest build in [Actions](../../actions) without selenium, ffmpeg, etc
 
-Releases in [Releases](../../releases)
+Releases in [Releases](../../releases) with all deps
 
 # HowTo
 ## Basic usage
 Capture puzzle solving to ./jcaps directory and wait 30s after finish then convert to video with duration 1:30
-Result sample see at [samples/ee8nLJ](samples/ee8nLJ) 
+Result sample see at [samples/ee8nLJ.skia](samples/ee8nLJ.skia) (jcap2video.skia) or [samples/Ol2Hdf.sel](samples/Ol2Hdf.sel) (jcap2video.sel)
 ```
 ./JiggieHelios.Cli capture -i ee8nLJ --post-delay 00:00:30 -o ./jcaps
-./JiggieHelios.Cli jcap2video --target-dur 00:01:30 -i ./jcaps/ee8nLJ_2023.12.02-12.36.39.jcap
+./JiggieHelios.Cli jcap2video.skia --target-dur 00:01:30 -i ./jcaps/ee8nLJ_2023.12.02-12.36.39.jcap
+```
+```
+./JiggieHelios.Cli capture -i Ol2Hdf --post-delay 00:00:30 -o ./jcaps
+./JiggieHelios.Cli jcap2video.sel --target-dur 00:01:30-i ./jcaps/Ol2Hdf_2023.12.07-06.09.43.jcap 
 ```
 
 ## Full help:
@@ -56,7 +61,7 @@ Actions
     JcapFile* (-i)   Jcap file
     OutFile (-o)     Output file. If - print to log stream
 
-  Jcap2Video -options -
+  Jcap2VideoSkia -options -
 
     Option                            Description
     JcapFile* (-i)                    Jcap file
@@ -68,9 +73,24 @@ Actions
     SpeedMultiplier (--speedx)
     TargetDuration (--target-dur)     Dynamically calculate speedx. If set speedx will be ignored
     CanvasSize (--canvas-size)        [Default='1920x0']
-    CanvasFill (--canvas-fill)        [Default='#5f9ea0']
+    CanvasFill (--canvas-fill)        [Default='#FFFFFF']
     FfmpegInArgs (--ffmpeg-in)        [Default='']
     FfmpegOutArgs (--ffmpeg-out)      [Default='-c:v libx264 -vf scale=1920:-2,format=yuv420p']
+
+  Jcap2VideoSel -options -
+
+    Option                          Description
+    JcapFile* (-i)                  Jcap file
+    OutFile (-o)                    output file
+    ImagesDirectory (--img-dir)
+    Fps (--fps)                     [Default='30']
+    SpeedMultiplier (--speedx)
+    TargetDuration (--target-dur)   Dynamically calculate speedx. If set speedx will be ignored
+    PostDelay (--post-delay)
+    CanvasSize (--canvas-size)      [Default='1920x-2']
+    CanvasFill (--canvas-fill)      [Default='#5f9ea0']
+    FfmpegInArgs (--ffmpeg-in)      [Default='']
+    FfmpegOutArgs (--ffmpeg-out)    [Default='-c:v libx264 -preset slower -b:v 2M -c:a libopus -b:a 64K -preset slow']
 
   Bot -options -
 
@@ -84,6 +104,9 @@ Actions
     UserColor (--color)                [Default='#ffa5a5']
     UserLogin (--login)                [Default='HELIOS-bot']
 ```
+
+## Limitations
+- Selenium render not support headless mode
 
 ## `appsettings.json` and `appsettings.<>.json`
 Default values and some settings can be configured with appsettings files. By default used `appsettings.json` and `appsettings.Production.json`. `Production` is value of `DOTNET_ENVIRONMENT` env variable. 
@@ -104,7 +127,7 @@ With appsettings default values for cli actions may be overriden.
 ```json
   "Cli": {
     "DefaultValues": {
-      "Jcap2Video": {                    //action name
+      "Jcap2VideoSkia": {                //action name
         "Threads": 36                      //arg value
       },
       "Capture": {                       //action name
