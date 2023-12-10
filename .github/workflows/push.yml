@@ -38,8 +38,28 @@ jobs:
         echo "GIT_COMMIT_SHA=${GIT_COMMIT_SHA}" >> ${GITHUB_ENV}
         echo "PROJECT_URL=${PROJECT_URL}"       >> ${GITHUB_ENV}
         echo "REPO_URL=${REPO_URL}"             >> ${GITHUB_ENV}
+    - name: PrepareDeps
+      run: |
+        if [ $GIT_REF_TYPE == tag ]; then
+          pushd external-deps
+          ./chrome.sh
+          ./ffmpeg.sh
+          ./puppeteer-stream.sh
+          ./reaggie-frontend.sh
+          popd
+        fi
     - name: Pack
-      run: cd ./src/JiggieHelios.Cli && dotnet publish -c Release -r $TARGET_OS -o ./out -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      run: |
+        pushd ./src/JiggieHelios.Cli 
+        dotnet publish -c Release -r $TARGET_OS -o ./out -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+        popd
+    - name: CopyDeps
+      run: |
+        if [ $GIT_REF_TYPE == tag ]; then
+          pushd ./external-deps
+          ./copy2output.sh "$TARGET_OS" "./src/JiggieHelios.Cli/out/files"
+          popd
+        fi
     - name: Dist
       uses: actions/upload-artifact@v2
       with:

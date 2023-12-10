@@ -1,0 +1,35 @@
+diff --git a/src/room/audio.ts b/src/room/audio.ts
+index c13dece..7a0a488 100644
+--- a/src/room/audio.ts
++++ b/src/room/audio.ts
+@@ -9,7 +9,7 @@ export let completesound: AudioBuffer;
+ 
+ let webmSupported: CanPlayTypeResult;
+ 
+-(["touchstart", "mousedown", "wheel"] as (keyof WindowEventMap)[]).forEach(t => {
++(["touchstart", "mousedown", "wheel", "room-loaded"] as (keyof WindowEventMap)[]).forEach(t => {
+     document.addEventListener(t, preloadsoundeffects, { capture: true, passive: true, once: true });
+ });
+ 
+diff --git a/src/room/game.ts b/src/room/game.ts
+index 5423504..6f33c1c 100644
+--- a/src/room/game.ts
++++ b/src/room/game.ts
+@@ -1041,4 +1041,5 @@ export async function initRoomData() {
+     }
+     refreshLockedDisplay();
+     updateDonePercent();
++    document.dispatchEvent(new Event('room-loaded'));
+ }
+diff --git a/src/room/net.ts b/src/room/net.ts
+index ceaa7a2..a0b61ae 100644
+--- a/src/room/net.ts
++++ b/src/room/net.ts
+@@ -229,6 +229,7 @@ connection.onMerge = (userId, groupIdA, groupIdB, x, y) => {
+         if (dlBox)
+             dlBox.style.display = 'inline';
+         playsound(completesound);
++        document.dispatchEvent(new Event('room-finished'));
+     }
+     recountHeldPieces();
+ };

@@ -1,0 +1,24 @@
+diff --git a/extension/options.js b/extension/options.js
+index 7430c08..f6b2c1b 100644
+--- a/extension/options.js
++++ b/extension/options.js
+@@ -12,6 +12,7 @@ async function START_RECORDING({
+ 	videoConstraints,
+ 	delay,
+ 	audioConstraints,
++	baseUrl,
+ }) {
+ 	console.log(
+ 		"[PUPPETEER_STREAM] START_RECORDING",
+@@ -29,7 +30,10 @@ async function START_RECORDING({
+ 		})
+ 	);
+ 
+-	const client = new WebSocket("ws://localhost:55200/?index=" + index, []);
++	if (baseUrl == null) {
++		baseUrl = "ws://localhost:55200/";
++	}
++	const client = new WebSocket(baseUrl + "?index=" + index, []);
+ 
+ 	await new Promise((resolve) => {
+ 		if (client.readyState === WebSocket.OPEN) resolve();
