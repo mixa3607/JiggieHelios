@@ -4,8 +4,8 @@ public class SeleniumOptions
 {
     public int Width { get; set; }
     public int Height { get; set; }
-    public int WidthOffset { get; set; }
-    public int HeightOffset { get; set; }
+    public int MaxWidthDiff { get; set; } = 10;
+    public int MaxHeightDiff { get; set; } = 10;
 
     public required string RecordingExtensionId { get; set; }
     public required string RecordingExtensionDir { get; set; }
@@ -15,4 +15,5 @@ public class SeleniumOptions
 
     public required string[] ChromeArgs { get; set; }
     public required string ChromeBin { get; set; }
+    public int ChromeDebuggingPort { get; set; } = 9222;
 }

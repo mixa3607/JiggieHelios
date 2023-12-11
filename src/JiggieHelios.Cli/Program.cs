@@ -36,7 +36,7 @@ internal class Program
             args = "bot -s io1GdtDSPyPjbByrlO56 -i L_pawe -a DoDick".Split(" ");
             args = "jcap2video.skia --help".Split(" ");
             args = "--help".Split(" ");
-            args = "jcap2video.sel -i ./jcaps/Ol2Hdf_2023.12.07-06.09.43.jcap --target-dur 0:01:30".Split(" ");
+            args = "jcap2video.sel -i ./jcaps/X7Lnmk_2023.12.11-10.41.59.jcap --target-dur 0:01:30".Split(" ");
         }
 
         try

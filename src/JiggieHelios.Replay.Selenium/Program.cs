@@ -100,8 +100,6 @@ public static class Program
             CloseAfter = true,
             Width = replayOptions.TargetWidth,
             Height = replayOptions.TargetHeight,
-            HeightOffset = 183,
-            WidthOffset = 16,
             ChromeBin = @"C:\Users\mixa3607\Desktop\browsers\chrome\win64-120.0.6099.71\chrome-win64\chrome.exe",
             ChromeArgs = """
                          --remote-debugging-port=9222
@@ -124,7 +122,7 @@ public static class Program
         await app.StartAsync();
         await app.WaitForShutdownAsync(); //
 
-        var browser =
+        /*var browser =
             await PuppeteerProvider.GetBrowserAsync(app.Services.GetRequiredService<IOptions<SeleniumOptions>>().Value);
 
         var recorderExtension = ActivatorUtilities.CreateInstance<PuppeteerPageRecording>(app.Services);
@@ -177,6 +175,6 @@ public static class Program
         }
 
         //await app.WaitForShutdownAsync(); //
-        await app.StopAsync();
+        await app.StopAsync();*/
     }
 }

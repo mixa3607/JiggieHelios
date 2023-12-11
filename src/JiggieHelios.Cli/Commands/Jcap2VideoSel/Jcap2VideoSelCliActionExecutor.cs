@@ -43,6 +43,10 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
             cfg.ReadFrom.Configuration(builder.Configuration);
         });
 
+        builder.Services
+            .AddSingleton<ReplayStateSynchronization>()
+            .AddSingleton<PuppeteerProvider>();
+
         builder.Services.AddSingleton(Options.Create(replayOptions));
         builder.Services.Configure<JiggieOptions>(builder.Configuration.GetSection("Jcap2VideoSel:Jiggie"));
         builder.Services.Configure<HostingOptions>(builder.Configuration.GetSection("Jcap2VideoSel:Hosting"));
@@ -94,14 +98,13 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
         };
 
         var webApp = BuildApp(replayOptions);
-        await webApp.StartAsync();
+        await webApp.StartAsync(ct);
         //await webApp.WaitForShutdownAsync(); //
 
         var vidIdx = $"{Guid.NewGuid()}.webm";
-        await RecordReplayAsync(replayOptions, videoStats, vidIdx, args, webApp.Services);
+        await RecordReplayAsync(replayOptions, videoStats, vidIdx, args, webApp.Services, ct);
 
         await webApp.StopAsync(TimeSpan.Zero);
-
 
         var outFile = args.OutFile ?? Path.Combine(Path.GetDirectoryName(args.JcapFile)!,
             $"{Path.GetFileNameWithoutExtension(args.JcapFile)}_{videoStats.SpeedupX}x.mp4");
@@ -121,33 +124,29 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
                 .NotifyOnProgress(x => _logger.LogDebug("Converting progress: {time}", x))
                 .CancellableThrough(ct)
             ;
+        _logger.LogInformation("Convert video with ffmpeg {args}", ffMpegArguments.Arguments);
         await ffMpegArguments.ProcessAsynchronously();
     }
 
     private async Task RecordReplayAsync(ReplayOptions replayOptions, SelCalculatedVideoStats stats, string vidIdx,
-        Jcap2VideoSelCliArgs args,
-        IServiceProvider services)
+        Jcap2VideoSelCliArgs args, IServiceProvider services, CancellationToken ct = default)
     {
+        var replayStateSynchronization = services.GetRequiredService<ReplayStateSynchronization>();
+        var puppeteerProvider = services.GetRequiredService<PuppeteerProvider>();
         var selOptions = services.GetRequiredService<IOptions<SeleniumOptions>>().Value;
         if (selOptions.Width == 0)
             selOptions.Width = replayOptions.TargetWidth;
         if (selOptions.Height == 0)
             selOptions.Height = replayOptions.TargetHeight;
 
-        var browser = await PuppeteerProvider.GetBrowserAsync(selOptions);
+        _logger.LogInformation("Target video size is {w}x{h}", selOptions.Height, selOptions.Width);
+
+        var browser = await puppeteerProvider.GetBrowserAsync(selOptions);
 
         try
         {
             var recorderExtension = ActivatorUtilities.CreateInstance<PuppeteerPageRecording>(services);
             await recorderExtension.InitAsync(browser);
-
-            var viewPortSizeActual = await recorderExtension.GetViewSizeAsync();
-            var viewPortSizeRequested = (replayOptions.TargetWidth, replayOptions.TargetHeight);
-            if (viewPortSizeActual != viewPortSizeRequested)
-            {
-                _logger.LogWarning("Viewport size not eq requested. See Offset parameters. {actual} != {requested}",
-                    viewPortSizeActual, viewPortSizeRequested);
-            }
 
             var jiggieSel = ActivatorUtilities.CreateInstance<PuppeteerJiggie>(services);
             await jiggieSel.InitAsync(await browser.NewPageAsync());
@@ -161,8 +160,11 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
 
 
             await jiggieSel.OpenTargetRoomAsync();
-            await jiggieSel.WaitFullInitAsync();
+            _logger.LogInformation("Wait jiggie client");
+            await replayStateSynchronization.SendingStartedSemaphore.WaitAsync(ct);
+            //await jiggieSel.WaitFullInitAsync();
 
+            _logger.LogInformation("Start recording");
             await recorderExtension.StartRecordingAsync(new GetStreamOptions()
             {
                 Audio = true,
@@ -187,20 +189,27 @@ public class Jcap2VideoSelCliActionExecutor : ICliActionExecutor<Jcap2VideoSelCl
                 }
             });
 
-            await jiggieSel.WaitFinishAsync();
+            _logger.LogInformation("Wait finish sending");
+            await replayStateSynchronization.SendingFinishedSemaphore.WaitAsync(ct);
+            //await jiggieSel.WaitFinishAsync();
 
-            await Task.Delay(TimeSpan.FromSeconds(1) + (args.PostDelay ?? TimeSpan.Zero), CancellationToken.None);
+            var delay = TimeSpan.FromSeconds(1) + (args.PostDelay ?? TimeSpan.Zero);
+            _logger.LogInformation("Wait before finish recording");
+            await Task.Delay(delay, ct);
 
+            _logger.LogInformation("Stop recording");
             await recorderExtension.StopRecordingAsync(vidIdx);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "err");
+            throw;
         }
         finally
         {
             if (selOptions.CloseAfter)
             {
+                _logger.LogInformation("Dispose browser");
                 await browser.DisposeAsync();
             }
         }
